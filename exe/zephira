@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-puts "Zephira"
+require "zephira"
+
+Zephira::CLI.new(ARGV)
