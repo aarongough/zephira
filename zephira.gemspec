@@ -31,9 +31,9 @@ Gem::Specification.new do |spec|
   # Dependencies
 
   # Development dependencies
-
   spec.add_development_dependency "rspec", "~> 3.13.2"
   spec.add_development_dependency "standard", "~> 1.54"
   spec.add_development_dependency "simplecov", "~> 0.22"
   spec.add_development_dependency "fakefs", "~> 3.2"
+  spec.add_development_dependency "irb", "~> 1.17"
 end

@@ -20,7 +20,7 @@ require "rspec"
 require "zephira"
 # Requiring PP before FakeFS Fixes the known `superclass mismatch` issue with FakeFS:
 # https://github.com/fakefs/fakefs#fakefs-----typeerror-superclass-mismatch-for-class-file
-require "pp" 
+require "pp"
 require "fakefs/spec_helpers"
 
 # Load custom matchers from spec/support
