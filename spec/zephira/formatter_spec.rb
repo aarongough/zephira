@@ -22,7 +22,7 @@ RSpec.describe Zephira::Formatter do
     it "indents the string correctly" do
       input = "This is a test.\nThis is another line."
       expected_output = "    This is a test.\n    This is another line."
-      
+
       expect(described_class.format(input, indent: 4)).to eq(expected_output)
     end
   end
