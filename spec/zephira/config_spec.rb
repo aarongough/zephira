@@ -8,11 +8,12 @@ RSpec.describe Zephira::Config do
   describe ".read" do
     before do
       ENV.delete("ZEPHIRA_TEST_KEY")
-      FakeFS.activate!
     end
 
-    after do
-      FakeFS.deactivate!
+    around do |example|
+      FakeFS.with_fresh do
+        example.run
+      end
     end
 
     def create_project_config(key: "ZEPHIRA_TEST_KEY", value: "project_key")
