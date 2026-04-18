@@ -9,13 +9,17 @@ Zephira is the ultimate AI-powered command-line coding assistant, written in Rub
 ## Development
 
 Clone this repo:
+
 `git clone https://github.com/aarongough/zephira.git`
 
 Install the development dependencies:
+
 `bundle install`
 
 Running specs locally:
+
 `bundle exec rspec`
 
 Running linter:
+
 `bundle exec standardrb --fix`
