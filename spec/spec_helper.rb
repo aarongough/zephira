@@ -18,6 +18,7 @@ $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 
 require "rspec"
 require "zephira"
+require "fakefs/spec_helpers"
 
 # Load custom matchers from spec/support
 Dir[File.expand_path("support/**/*.rb", __dir__)].sort.each { |f| require f }

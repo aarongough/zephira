@@ -9,6 +9,7 @@ GEM
     ast (2.4.3)
     diff-lcs (1.6.2)
     docile (1.4.1)
+    fakefs (3.2.1)
     json (2.19.3)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
@@ -79,8 +80,9 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  fakefs (~> 3.2)
   rspec (~> 3.13.2)
-  simplecov (~> 0.22.0)
+  simplecov (~> 0.22)
   standard (~> 1.54)
   zephira!
 
