@@ -30,6 +30,9 @@ Gem::Specification.new do |spec|
 
   # Dependencies
   spec.add_dependency "faraday", "~> 2.0"
+  spec.add_dependency "tty-spinner", "~> 0.9"
+  spec.add_dependency "tty-screen", "~> 0.8"
+  spec.add_dependency "tty-cursor", "~> 0.7"
 
   # Development dependencies
   spec.add_development_dependency "webmock", "~> 3.0"

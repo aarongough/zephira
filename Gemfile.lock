@@ -3,6 +3,9 @@ PATH
   specs:
     zephira (0.1.0)
       faraday (~> 2.0)
+      tty-cursor (~> 0.7)
+      tty-screen (~> 0.8)
+      tty-spinner (~> 0.9)
 
 GEM
   remote: https://rubygems.org/
@@ -112,6 +115,10 @@ GEM
       rubocop-performance (~> 1.26.0)
     stringio (3.2.0)
     tsort (0.2.0)
+    tty-cursor (0.7.1)
+    tty-screen (0.8.2)
+    tty-spinner (0.9.3)
+      tty-cursor (~> 0.7)
     unicode-display_width (3.2.0)
       unicode-emoji (~> 4.1)
     unicode-emoji (4.2.0)
