@@ -17,6 +17,7 @@ end
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 
 require "rspec"
+require "webmock/rspec"
 require "zephira"
 # Requiring PP before FakeFS Fixes the known `superclass mismatch` issue with FakeFS:
 # https://github.com/fakefs/fakefs#fakefs-----typeerror-superclass-mismatch-for-class-file
