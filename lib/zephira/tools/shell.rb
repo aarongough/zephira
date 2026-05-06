@@ -1,0 +1,91 @@
+# frozen_string_literal: true
+
+require "open3"
+
+module Zephira
+  class Tools
+    class Shell < BaseTool
+      TRUNCATION_LIMIT = 200
+
+      class << self
+        def name
+          "shell"
+        end
+
+        def description
+          "Run a shell command"
+        end
+
+        def parameters
+          {
+            type: "object",
+            properties: {
+              command: {type: "string", description: "Command to run"},
+              intent: {type: "string", description: "Brief summary of intent of the operation, meant to be used for context compaction and presentation to the user. Use active voice (e.g., 'Reading X to do Y')."}
+            },
+            required: ["command", "intent"]
+          }
+        end
+
+        def terminal_width
+          TRUNCATION_LIMIT
+        end
+      end
+
+      def run
+        begin
+          cmd = validate(arg(:command), arg_path: "command", type: String, allow_empty: false)
+        rescue ToolUseError => e
+          return error_result(message: e.message)
+        end
+
+        agent.status.verbose(" • Running shell command: '#{cmd}'")
+        stdout_str, stderr_str, status_obj = Open3.capture3(cmd, chdir: Dir.pwd)
+
+        unless stdout_str.to_s.empty?
+          message = truncate_string_to_fit(
+            prefix: " • Shell command stdout: ",
+            text_array: stdout_str.lines,
+            max_characters: self.class.terminal_width
+          )
+          agent.status.verbose(message)
+        end
+
+        unless stderr_str.to_s.empty?
+          message = truncate_string_to_fit(
+            prefix: " • \e[91mShell command stderr:\e[0m ",
+            text_array: stderr_str.lines,
+            max_characters: self.class.terminal_width
+          )
+          agent.status.verbose(message)
+        end
+
+        agent.status.verbose(" • Shell command completed with exit status: #{status_obj.exitstatus}")
+        success_result(status: status_obj.exitstatus, stdout: stdout_str, stderr: stderr_str)
+      rescue Errno::ENOENT
+        error_result(message: "Command not found: #{arg(:command)}")
+      rescue => e
+        error_result(message: "Execution error: #{e.message}")
+      end
+
+      private
+
+      def truncate_string_to_fit(prefix:, text_array:, max_characters:)
+        postfix = " ... (~#{text_array.size - 1} more lines)"
+        overhead = prefix.length + postfix.length + 23
+        available_length = max_characters - overhead
+
+        sanitized = text_array.join
+          .gsub(/\e\[[\d;?]*[@-~]/, "")
+          .delete("\e")
+          .gsub(/\r?\n/, " ")
+
+        full = prefix + sanitized
+        return full if full.length <= max_characters
+
+        truncated = sanitized[0, available_length]
+        prefix + truncated + postfix
+      end
+    end
+  end
+end
