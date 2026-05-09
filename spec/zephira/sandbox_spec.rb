@@ -1,0 +1,161 @@
+# frozen_string_literal: true
+
+require "spec_helper"
+
+RSpec.describe Zephira::Sandbox do
+  let(:default_image) { "ghcr.io/aarongough/zephira:#{Zephira::VERSION}" }
+
+  before do
+    allow(described_class).to receive(:docker_available?).and_return(true)
+    allow(described_class).to receive(:resolve_image).and_return(default_image)
+    allow(Kernel).to receive(:exec)
+    allow($stderr).to receive(:puts)
+    ENV.delete("ZEPHIRA_IN_DOCKER")
+    ENV.delete("ZEPHIRA_SANDBOX")
+  end
+
+  after do
+    ENV.delete("ZEPHIRA_IN_DOCKER")
+    ENV.delete("ZEPHIRA_SANDBOX")
+  end
+
+  describe ".exec_if_needed!" do
+    context "when ZEPHIRA_IN_DOCKER=1" do
+      before { ENV["ZEPHIRA_IN_DOCKER"] = "1" }
+
+      it "returns without exec-ing" do
+        described_class.exec_if_needed!([])
+        expect(Kernel).not_to have_received(:exec)
+      end
+    end
+
+    context "when ZEPHIRA_SANDBOX=false in env" do
+      before { ENV["ZEPHIRA_SANDBOX"] = "false" }
+
+      it "returns without exec-ing" do
+        described_class.exec_if_needed!([])
+        expect(Kernel).not_to have_received(:exec)
+      end
+    end
+
+    context "when Docker is unavailable" do
+      before { allow(described_class).to receive(:docker_available?).and_return(false) }
+
+      it "returns without exec-ing" do
+        described_class.exec_if_needed!([])
+        expect(Kernel).not_to have_received(:exec)
+      end
+    end
+
+    context "when sandbox should activate" do
+      def captured_exec_args
+        args = nil
+        allow(Kernel).to receive(:exec) { |*a| args = a }
+        described_class.exec_if_needed!(["--extra"])
+        args
+      end
+
+      it "calls Kernel.exec with docker run as the first two args" do
+        described_class.exec_if_needed!([])
+        expect(Kernel).to have_received(:exec).with("docker", "run", any_args)
+      end
+
+      it "includes --rm flag" do
+        expect(captured_exec_args).to include("--rm")
+      end
+
+      it "includes the sentinel env var" do
+        args = captured_exec_args
+        idx = args.index("-e")
+        expect(args[idx + 1]).to eq("ZEPHIRA_IN_DOCKER=1")
+      end
+
+      it "mounts the current directory as /workspace" do
+        expect(captured_exec_args).to include("#{Dir.pwd}:/workspace:rw")
+      end
+
+      it "sets the working directory to /workspace" do
+        args = captured_exec_args
+        idx = args.index("-w")
+        expect(args[idx + 1]).to eq("/workspace")
+      end
+
+      it "uses the resolved image" do
+        expect(captured_exec_args).to include(default_image)
+      end
+
+      it "passes argv through to the container" do
+        described_class.exec_if_needed!(["--verbose", "foo"])
+        args = nil
+        allow(Kernel).to receive(:exec) { |*a| args = a }
+        described_class.exec_if_needed!(["--verbose", "foo"])
+        expect(args).to include("--verbose", "foo")
+      end
+
+      it "includes -t when stdout is a TTY" do
+        allow($stdout).to receive(:tty?).and_return(true)
+        expect(captured_exec_args).to include("-t")
+      end
+
+      it "omits -t when stdout is not a TTY" do
+        allow($stdout).to receive(:tty?).and_return(false)
+        expect(captured_exec_args).not_to include("-t")
+      end
+
+      it "forwards set env vars" do
+        ENV["ZEPHIRA_API_KEY"] = "test-key"
+        expect(captured_exec_args).to include("ZEPHIRA_API_KEY=test-key")
+      ensure
+        ENV.delete("ZEPHIRA_API_KEY")
+      end
+
+      it "does not include unset env vars" do
+        ENV.delete("ZEPHIRA_MODEL")
+        expect(captured_exec_args).not_to include(start_with("ZEPHIRA_MODEL="))
+      end
+    end
+  end
+
+  describe "resolve_image (private)" do
+    before { allow(described_class).to receive(:resolve_image).and_call_original }
+
+    context "without ZEPHIRA_BASE_IMAGE" do
+      before { allow(Zephira::Config).to receive(:read).with("ZEPHIRA_BASE_IMAGE").and_return(nil) }
+
+      it "returns the default GHCR image tagged with VERSION" do
+        expect(described_class.send(:resolve_image)).to eq(default_image)
+      end
+    end
+
+    context "with ZEPHIRA_BASE_IMAGE set" do
+      before do
+        allow(Zephira::Config).to receive(:read).with("ZEPHIRA_BASE_IMAGE").and_return("python:3.12-slim")
+        allow(described_class).to receive(:image_exists?).and_return(true)
+      end
+
+      it "returns a derived image name containing the base image" do
+        name = described_class.send(:resolve_image)
+        expect(name).to start_with("zephira-sandbox-python-3.12-slim")
+      end
+
+      it "includes the Zephira version as the tag" do
+        name = described_class.send(:resolve_image)
+        expect(name).to end_with(":#{Zephira::VERSION}")
+      end
+
+      it "builds the derived image when it does not exist locally" do
+        allow(described_class).to receive(:image_exists?).and_return(false)
+        allow(described_class).to receive(:build_derived_image)
+        described_class.send(:resolve_image)
+        expect(described_class).to have_received(:build_derived_image)
+      end
+
+      it "skips building when the derived image already exists" do
+        allow(described_class).to receive(:image_exists?).and_return(true)
+        allow(described_class).to receive(:build_derived_image)
+        described_class.send(:resolve_image)
+        expect(described_class).not_to have_received(:build_derived_image)
+      end
+    end
+  end
+end

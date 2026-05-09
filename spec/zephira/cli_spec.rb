@@ -7,6 +7,7 @@ RSpec.describe Zephira::CLI do
 
   before do
     allow(Zephira::Agent).to receive(:new).and_return(fake_agent)
+    allow(Zephira::Sandbox).to receive(:exec_if_needed!)
   end
 
   describe "cmd: zephira -v" do
@@ -35,6 +36,25 @@ RSpec.describe Zephira::CLI do
       described_class.new([])
 
       expect(Zephira::Agent).to have_received(:new)
+      expect(fake_agent).to have_received(:run_loop)
+    end
+
+    it "invokes the sandbox check" do
+      described_class.new([])
+      expect(Zephira::Sandbox).to have_received(:exec_if_needed!).with([])
+    end
+  end
+
+  describe "cmd: zephira --dangerously-skip-permissions" do
+    after { ENV.delete("ZEPHIRA_SANDBOX") }
+
+    it "sets ZEPHIRA_SANDBOX=false before the sandbox check" do
+      described_class.new(["--dangerously-skip-permissions"])
+      expect(ENV["ZEPHIRA_SANDBOX"]).to eq("false")
+    end
+
+    it "still starts the agent" do
+      described_class.new(["--dangerously-skip-permissions"])
       expect(fake_agent).to have_received(:run_loop)
     end
   end

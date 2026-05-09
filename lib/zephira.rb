@@ -2,6 +2,7 @@
 
 require_relative "zephira/version"
 require_relative "zephira/config"
+require_relative "zephira/sandbox"
 require_relative "zephira/formatter"
 require_relative "zephira/logger"
 require_relative "zephira/backends"

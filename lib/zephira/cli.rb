@@ -5,6 +5,8 @@ require "optparse"
 module Zephira
   class CLI
     def initialize(argv)
+      ENV["ZEPHIRA_SANDBOX"] = "false" if argv.include?("--dangerously-skip-permissions")
+      Zephira::Sandbox.exec_if_needed!(argv)
       option_parser.parse!(argv)
       Zephira::Agent.new.run_loop
     rescue OptionParser::InvalidOption
@@ -26,6 +28,10 @@ module Zephira
         opts.on("-h", "--help", "Print this help") do
           puts opts
           exit(0)
+        end
+
+        opts.on("--dangerously-skip-permissions", "Skip Docker sandbox and run without isolation") do
+          ENV["ZEPHIRA_SANDBOX"] = "false"
         end
       end
     end
