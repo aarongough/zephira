@@ -10,18 +10,18 @@ RSpec.describe Zephira::Sandbox do
     allow(described_class).to receive(:resolve_image).and_return(default_image)
     allow(Kernel).to receive(:exec)
     allow($stderr).to receive(:puts)
-    ENV.delete("ZEPHIRA_IN_DOCKER")
+    ENV.delete("ZEPHIRA_IN_SANDBOX")
     ENV.delete("ZEPHIRA_SANDBOX")
   end
 
   after do
-    ENV.delete("ZEPHIRA_IN_DOCKER")
+    ENV.delete("ZEPHIRA_IN_SANDBOX")
     ENV.delete("ZEPHIRA_SANDBOX")
   end
 
   describe ".exec_if_needed!" do
-    context "when ZEPHIRA_IN_DOCKER=1" do
-      before { ENV["ZEPHIRA_IN_DOCKER"] = "1" }
+    context "when ZEPHIRA_IN_SANDBOX=1" do
+      before { ENV["ZEPHIRA_IN_SANDBOX"] = "1" }
 
       it "returns without exec-ing" do
         described_class.exec_if_needed!([])
@@ -41,9 +41,17 @@ RSpec.describe Zephira::Sandbox do
     context "when Docker is unavailable" do
       before { allow(described_class).to receive(:docker_available?).and_return(false) }
 
-      it "returns without exec-ing" do
-        described_class.exec_if_needed!([])
-        expect(Kernel).not_to have_received(:exec)
+      it "exits with a non-zero status" do
+        expect { described_class.exec_if_needed!([]) }.to raise_error(SystemExit)
+      end
+
+      it "prints instructions including --dangerously-skip-sandbox to stderr" do
+        begin
+          described_class.exec_if_needed!([])
+        rescue SystemExit
+          nil
+        end
+        expect($stderr).to have_received(:puts).with(/--dangerously-skip-sandbox/)
       end
     end
 
@@ -67,7 +75,7 @@ RSpec.describe Zephira::Sandbox do
       it "includes the sentinel env var" do
         args = captured_exec_args
         idx = args.index("-e")
-        expect(args[idx + 1]).to eq("ZEPHIRA_IN_DOCKER=1")
+        expect(args[idx + 1]).to eq("ZEPHIRA_IN_SANDBOX=1")
       end
 
       it "mounts the current directory as /workspace" do
@@ -102,17 +110,36 @@ RSpec.describe Zephira::Sandbox do
         expect(captured_exec_args).not_to include("-t")
       end
 
-      it "forwards set env vars" do
+      it "forwards ZEPHIRA_-prefixed env vars" do
         ENV["ZEPHIRA_API_KEY"] = "test-key"
         expect(captured_exec_args).to include("ZEPHIRA_API_KEY=test-key")
       ensure
         ENV.delete("ZEPHIRA_API_KEY")
       end
 
+      it "does not forward unrelated env vars" do
+        ENV["SOME_RANDOM_VAR"] = "value"
+        expect(captured_exec_args).not_to include(start_with("SOME_RANDOM_VAR="))
+      ensure
+        ENV.delete("SOME_RANDOM_VAR")
+      end
+
       it "does not include unset env vars" do
         ENV.delete("ZEPHIRA_MODEL")
         expect(captured_exec_args).not_to include(start_with("ZEPHIRA_MODEL="))
       end
+    end
+  end
+
+  describe "forwarded_env_keys (private)" do
+    it "excludes ZEPHIRA_IN_SANDBOX and ZEPHIRA_SANDBOX even if set" do
+      ENV["ZEPHIRA_IN_SANDBOX"] = "1"
+      ENV["ZEPHIRA_SANDBOX"]    = "false"
+      keys = described_class.send(:forwarded_env_keys)
+      expect(keys).not_to include("ZEPHIRA_IN_SANDBOX", "ZEPHIRA_SANDBOX")
+    ensure
+      ENV.delete("ZEPHIRA_IN_SANDBOX")
+      ENV.delete("ZEPHIRA_SANDBOX")
     end
   end
 

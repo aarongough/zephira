@@ -8,6 +8,7 @@ RSpec.describe "web_search tool", :integration do
   BRAVE_SEARCH_URL = "https://api.search.brave.com/res/v1/web/search"
 
   before do
+    allow(Zephira::Config).to receive(:read).and_call_original
     allow(Zephira::Config).to receive(:read).with("ZEPHIRA_MODEL").and_return("gpt-4.1-mini")
     allow(Zephira::Config).to receive(:read).with("ZEPHIRA_API_KEY").and_return("test-key")
     allow(Zephira::Config).to receive(:read).with("ZEPHIRA_BASE_URL").and_return(nil)
@@ -27,10 +28,10 @@ RSpec.describe "web_search tool", :integration do
   end
 
   around do |example|
-    original = ENV["BRAVE_SEARCH_API_KEY"]
-    ENV["BRAVE_SEARCH_API_KEY"] = "test-brave-key"
+    original = ENV["ZEPHIRA_BRAVE_SEARCH_API_KEY"]
+    ENV["ZEPHIRA_BRAVE_SEARCH_API_KEY"] = "test-brave-key"
     example.run
-    ENV["BRAVE_SEARCH_API_KEY"] = original
+    ENV["ZEPHIRA_BRAVE_SEARCH_API_KEY"] = original
   end
 
   describe "successful search" do
@@ -68,15 +69,15 @@ RSpec.describe "web_search tool", :integration do
 
   describe "missing API key" do
     around do |example|
-      original = ENV["BRAVE_SEARCH_API_KEY"]
-      ENV.delete("BRAVE_SEARCH_API_KEY")
+      original = ENV["ZEPHIRA_BRAVE_SEARCH_API_KEY"]
+      ENV.delete("ZEPHIRA_BRAVE_SEARCH_API_KEY")
       example.run
-      ENV["BRAVE_SEARCH_API_KEY"] = original
+      ENV["ZEPHIRA_BRAVE_SEARCH_API_KEY"] = original
     end
 
     it "returns an error" do
       result = run_tool(queries: [{"query" => "anything", "num_results" => 1}], intent: "search")
-      expect(result).to be_error(/BRAVE_SEARCH_API_KEY/)
+      expect(result).to be_error(/ZEPHIRA_BRAVE_SEARCH_API_KEY/)
     end
   end
 

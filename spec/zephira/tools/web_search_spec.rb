@@ -10,10 +10,10 @@ RSpec.describe Zephira::Tools::WebSearch do
   BRAVE_URL = "https://api.search.brave.com/res/v1/web/search"
 
   around do |example|
-    original = ENV["BRAVE_SEARCH_API_KEY"]
-    ENV["BRAVE_SEARCH_API_KEY"] = "test-key"
+    original = ENV["ZEPHIRA_BRAVE_SEARCH_API_KEY"]
+    ENV["ZEPHIRA_BRAVE_SEARCH_API_KEY"] = "test-key"
     example.run
-    ENV["BRAVE_SEARCH_API_KEY"] = original
+    ENV["ZEPHIRA_BRAVE_SEARCH_API_KEY"] = original
   end
 
   def run(args)
@@ -53,14 +53,18 @@ RSpec.describe Zephira::Tools::WebSearch do
 
     context "missing API key" do
       around do |example|
-        original = ENV.delete("BRAVE_SEARCH_API_KEY")
+        original = ENV.delete("ZEPHIRA_BRAVE_SEARCH_API_KEY")
         example.run
-        ENV["BRAVE_SEARCH_API_KEY"] = original
+        ENV["ZEPHIRA_BRAVE_SEARCH_API_KEY"] = original
+      end
+
+      before do
+        allow(Zephira::Config).to receive(:read).with("ZEPHIRA_BRAVE_SEARCH_API_KEY").and_return(nil)
       end
 
       it "returns an error" do
         result = run("queries" => [{"query" => "ruby", "num_results" => 5}])
-        expect(result).to be_error(/BRAVE_SEARCH_API_KEY/)
+        expect(result).to be_error(/ZEPHIRA_BRAVE_SEARCH_API_KEY/)
       end
     end
 

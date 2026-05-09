@@ -45,16 +45,16 @@ RSpec.describe Zephira::CLI do
     end
   end
 
-  describe "cmd: zephira --dangerously-skip-permissions" do
+  describe "cmd: zephira --dangerously-skip-sandbox" do
     after { ENV.delete("ZEPHIRA_SANDBOX") }
 
     it "sets ZEPHIRA_SANDBOX=false before the sandbox check" do
-      described_class.new(["--dangerously-skip-permissions"])
+      described_class.new(["--dangerously-skip-sandbox"])
       expect(ENV["ZEPHIRA_SANDBOX"]).to eq("false")
     end
 
     it "still starts the agent" do
-      described_class.new(["--dangerously-skip-permissions"])
+      described_class.new(["--dangerously-skip-sandbox"])
       expect(fake_agent).to have_received(:run_loop)
     end
   end

@@ -1,15 +1,36 @@
 # frozen_string_literal: true
 
 require "tempfile"
+require "io/console"
 
 module Zephira
   class Sandbox
-    GHCR_IMAGE = "ghcr.io/aarongough/zephira"
+    GHCR_IMAGE           = "ghcr.io/aarongough/zephira"
     DERIVED_IMAGE_PREFIX = "zephira-sandbox"
+
+    FORWARDED_ENV_PATTERNS = [/\AZEPHIRA_/].freeze
+    FORWARDED_ENV_EXCLUDES = %w[ZEPHIRA_IN_SANDBOX ZEPHIRA_SANDBOX].freeze
+
+    OUTER_TL = "╔"
+    OUTER_TR = "╗"
+    OUTER_BL = "╚"
+    OUTER_BR = "╝"
+    OUTER_H  = "═"
+    OUTER_V  = "║"
+
+    INNER_TL = "┌"
+    INNER_TR = "┐"
+    INNER_BL = "└"
+    INNER_BR = "┘"
+    INNER_H  = "─"
+    INNER_V  = "│"
 
     class << self
       def exec_if_needed!(argv)
-        return unless sandbox_enabled?
+        return if ENV["ZEPHIRA_IN_SANDBOX"] == "1"
+        return if ENV["ZEPHIRA_SANDBOX"] == "false"
+
+        abort_with_sandbox_error unless docker_available?
 
         target = resolve_image
         $stderr.puts "[Zephira] Launching in Docker sandbox (#{target})..."
@@ -18,13 +39,88 @@ module Zephira
 
       private
 
-      def sandbox_enabled?
-        return false if ENV["ZEPHIRA_IN_DOCKER"] == "1"
+      def abort_with_sandbox_error
+        width = terminal_width
 
-        val = Config.read("ZEPHIRA_SANDBOX")
-        return false if val == "false" || val == false
+        warn_lines = [
+          "",
+          "#{Formatter.color(:red, "⚠")}  #{Formatter.color(:red, "WARNING:")} Without the sandbox the agent has direct access to",
+          "your host filesystem. Files it creates, modifies, or deletes",
+          "affect your real system with no isolation or undo. Only skip",
+          "the sandbox if you understand and accept this risk.",
+          ""
+        ]
 
-        docker_available?
+        instruction_lines = [
+          "",
+          "  #{Formatter.color(:red, "ERROR:")} Zephira requires Docker to run safely in a sandboxed environment.",
+          "",
+          "  Docker was not found or is not currently running. To fix this:",
+          "",
+          "    1. Install Docker Desktop:  https://docs.docker.com/get-docker/",
+          "    2. Start Docker and confirm it is running:  docker info",
+          "",
+          "  To bypass the sandbox (not recommended):",
+          "",
+          "    zephira --dangerously-skip-sandbox",
+          ""
+        ]
+
+        max_warn_width    = warn_lines.map { |line| visible_length(line) }.max
+        max_content_width = instruction_lines.map { |line| visible_length(line) }.max
+        inner_width       = [max_warn_width, max_content_width - 10].max
+
+        inner_box = [
+          "  " + inner_top(inner_width),
+          *warn_lines.map { |line| "  " + inner_row(line, inner_width) },
+          "  " + inner_bottom(inner_width)
+        ]
+
+        content = [*instruction_lines, *inner_box, ""]
+
+        [
+          outer_top(width),
+          *content.map { |line| outer_row(line, width) },
+          outer_bottom(width),
+          ""
+        ].each { |line| $stderr.puts line }
+        exit(1)
+      end
+
+      def outer_top(width)
+        Formatter.color(:red, OUTER_TL + OUTER_H * (width - 2) + OUTER_TR)
+      end
+
+      def outer_bottom(width)
+        Formatter.color(:red, OUTER_BL + OUTER_H * (width - 2) + OUTER_BR)
+      end
+
+      def outer_row(text, width)
+        padding = " " * [width - 2 - visible_length(text), 0].max
+        Formatter.color(:red, OUTER_V) + text + padding + Formatter.color(:red, OUTER_V)
+      end
+
+      def inner_top(max_width)
+        Formatter.color(:red, INNER_TL + INNER_H * (max_width + 6) + INNER_TR)
+      end
+
+      def inner_bottom(max_width)
+        Formatter.color(:red, INNER_BL + INNER_H * (max_width + 6) + INNER_BR)
+      end
+
+      def inner_row(text, max_width)
+        padding = " " * [max_width - visible_length(text), 0].max
+        Formatter.color(:red, INNER_V) + "   " + text + padding + "   " + Formatter.color(:red, INNER_V)
+      end
+
+      def visible_length(str)
+        str.gsub(/\e\[[0-9;]*m/, "").length
+      end
+
+      def terminal_width
+        IO.console&.winsize&.last || 80
+      rescue StandardError
+        80
       end
 
       def docker_available?
@@ -53,19 +149,26 @@ module Zephira
       end
 
       def build_derived_image(base_image, target_name)
-        content = "FROM #{base_image}\nRUN gem install zephira:#{VERSION} --no-document\n"
-        Tempfile.create(["zephira-sandbox", ".dockerfile"]) do |f|
-          f.write(content)
-          f.flush
-          system("docker build -t #{target_name} -f #{f.path} .")
+        dockerfile = "FROM #{base_image}\nRUN gem install zephira:#{VERSION} --no-document\n"
+        Tempfile.create(["zephira-sandbox", ".dockerfile"]) do |file|
+          file.write(dockerfile)
+          file.flush
+          system("docker build -t #{target_name} -f #{file.path} .")
         end
+      end
+
+      def forwarded_env_keys
+        ENV.keys
+          .reject { |key| FORWARDED_ENV_EXCLUDES.include?(key) }
+          .select { |key| FORWARDED_ENV_PATTERNS.any? { |pattern| key.match?(pattern) } }
+          .sort
       end
 
       def build_docker_command(argv, image)
         cmd = ["docker", "run", "--rm", "-i"]
         cmd << "-t" if $stdout.tty?
 
-        cmd += ["-e", "ZEPHIRA_IN_DOCKER=1"]
+        cmd += ["-e", "ZEPHIRA_IN_SANDBOX=1"]
         cmd += ["-v", "#{Dir.pwd}:/workspace:rw"]
 
         global_config = File.expand_path("~/.zephira.yml")
@@ -74,8 +177,8 @@ module Zephira
         global_dir = File.expand_path("~/.zephira")
         cmd += ["-v", "#{global_dir}:/root/.zephira:ro"] if File.exist?(global_dir) && File.directory?(global_dir)
 
-        %w[ZEPHIRA_API_KEY ZEPHIRA_MODEL ZEPHIRA_BASE_URL ZEPHIRA_BACKEND].each do |key|
-          cmd += ["-e", "#{key}=#{ENV[key]}"] if ENV[key]
+        forwarded_env_keys.each do |key|
+          cmd += ["-e", "#{key}=#{ENV[key]}"]
         end
 
         cmd += ["-w", "/workspace"]

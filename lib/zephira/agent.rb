@@ -148,14 +148,6 @@ module Zephira
       puts "  Type your command or question below. If you're not sure what to ask, you can"
       puts "  ask me what I can do for you... or type '/help' for a list of commands."
 
-      screen_height = begin
-        TTY::Screen.height
-      rescue
-        24
-      end
-      pad_lines = [screen_height - 18, 0].max
-      puts "\n" * pad_lines
-
       loop do
         context_used = rough_token_count(JSON.dump(@history.messages))
         context_limit = @model.context_limit
@@ -165,20 +157,25 @@ module Zephira
         rescue
           80
         end
+        height = begin
+          TTY::Screen.height
+        rescue
+          24
+        end
+        print TTY::Cursor.move_to(0, height - 3)
         puts Formatter.color(:grey, "-" * width)
-        puts Formatter.color(:grey, "ctrl+c to exit | '/help' + enter to see commands | #{context_pct}% context left")
+
+        sandbox_label = ENV["ZEPHIRA_IN_SANDBOX"] == "1" ? "sandboxed" : "⚠ DANGER: NO SANDBOX"
+        sandbox_color = ENV["ZEPHIRA_IN_SANDBOX"] == "1" ? :green : :red
+        right_text    = "ctrl+c to exit | '/help' + enter to see commands | #{context_pct}% context left"
+        padding       = [width - sandbox_label.length - right_text.length, 1].max
+        puts Formatter.color(sandbox_color, sandbox_label) + " " * padding + Formatter.color(:grey, right_text)
 
         user_input = Readline.readline("> ", true)
         break if user_input.nil?
 
         input = user_input.strip
         next if input.empty?
-
-        if input.start_with?("/")
-          parts = input[1..].strip.split
-          run_command(name: parts.first, args: parts[1..] || [])
-          next
-        end
 
         TTY::Cursor.hide
 
@@ -199,6 +196,13 @@ module Zephira
         puts Formatter.color(:grey, "User:")
         puts Formatter.format(input, indent: 2)
         puts
+
+        if input.start_with?("/")
+          parts = input[1..].strip.split
+          run_command(name: parts.first, args: parts[1..] || [])
+          TTY::Cursor.show
+          next
+        end
 
         history.append(role: "user", content: input)
         messages = [system_prompt] + history.messages.map { |m| m.slice(:role, :content, :tool_call_id, :tool_calls) }

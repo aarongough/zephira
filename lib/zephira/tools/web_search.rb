@@ -59,9 +59,9 @@ module Zephira
           return error_result(message: e.message)
         end
 
-        api_key = ENV["BRAVE_SEARCH_API_KEY"].to_s
+        api_key = Config.read("ZEPHIRA_BRAVE_SEARCH_API_KEY").to_s
         if api_key.strip.empty?
-          return error_result(message: "BRAVE_SEARCH_API_KEY environment variable not set")
+          return error_result(message: "ZEPHIRA_BRAVE_SEARCH_API_KEY not set (env var or .zephira.yml)")
         end
 
         results = queries.map { |q| run_query(q, api_key) }
