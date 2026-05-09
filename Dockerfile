@@ -13,9 +13,12 @@ RUN apt-get update -qq && \
 COPY Gemfile Gemfile.lock zephira.gemspec ./
 COPY lib/zephira/version.rb lib/zephira/version.rb
 
-RUN bundle config set --local deployment true && \
-    bundle config set --local without "development test" && \
-    bundle install --jobs 4
+ENV BUNDLE_WITHOUT="development:test"
+
+RUN bundle install --jobs 4
+
+COPY . .
+RUN gem build zephira.gemspec
 
 
 FROM ruby:3.4-slim AS runtime
@@ -25,17 +28,11 @@ RUN apt-get update -qq && \
       libreadline-dev \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-
-COPY --from=deps /build/vendor /app/vendor
-COPY --from=deps /build/.bundle /app/.bundle
 COPY --from=deps /usr/local/bundle /usr/local/bundle
+COPY --from=deps /build/zephira-*.gem /tmp/
 
-COPY . .
-
-RUN gem build zephira.gemspec && \
-    gem install --local --no-document zephira-*.gem && \
-    rm -f zephira-*.gem
+RUN gem install --local --no-document /tmp/zephira-*.gem && \
+    rm -f /tmp/zephira-*.gem
 
 WORKDIR /workspace
 
