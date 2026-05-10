@@ -7,7 +7,7 @@ RSpec.describe Zephira::Tools::ListDirectory do
 
   let(:logger) { double("logger", info: nil, warn: nil, error: nil) }
   let(:status) { double("status", verbose: nil, warn: nil) }
-  let(:agent) { double("agent", status: status, logger: logger) }
+  let(:agent) { double("agent", status: status, logger: logger, update_status: nil) }
 
   describe ".name" do
     it { expect(described_class.name).to eq("list_directory") }

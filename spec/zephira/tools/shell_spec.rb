@@ -7,7 +7,7 @@ RSpec.describe Zephira::Tools::Shell do
   let(:workdir) { Dir.pwd }
   let(:logger) { double("logger", info: nil, warn: nil, error: nil) }
   let(:status) { double("status", verbose: nil, warn: nil) }
-  let(:agent) { double("agent", status: status, logger: logger) }
+  let(:agent) { double("agent", status: status, logger: logger, update_status: nil) }
 
   before do
     allow(described_class).to receive(:terminal_width).and_return(described_class::TRUNCATION_LIMIT)

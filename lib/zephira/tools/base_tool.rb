@@ -54,6 +54,7 @@ module Zephira
             tool_instance = new(args: args, agent: agent)
             intent_value = tool_instance.arg(:intent)
             tool_instance.validate(intent_value, arg_path: "args[:intent]", type: String)
+            agent.update_status(Formatter.color(:green, "→ ") + intent_value)
             tool_instance.run
           rescue Exception => e
             log_message = "Tool call `#{name}` with args `#{args.inspect}` returned error: #{e.message}"

@@ -6,7 +6,7 @@ require "open3"
 RSpec.describe Zephira::Tools::CodeSearch do
   let(:logger) { double("logger", info: nil, warn: nil, error: nil) }
   let(:status) { double("status", verbose: nil, warn: nil) }
-  let(:agent) { double("agent", logger: logger, status: status) }
+  let(:agent) { double("agent", logger: logger, status: status, update_status: nil) }
 
   describe ".parameters" do
     it "defines queries and intent at the top level" do

@@ -5,7 +5,7 @@ require "spec_helper"
 RSpec.describe Zephira::Tools::WebSearch do
   let(:logger) { double("logger", info: nil, warn: nil, error: nil) }
   let(:status) { double("status", verbose: nil, warn: nil) }
-  let(:agent) { double("agent", logger: logger, status: status) }
+  let(:agent) { double("agent", logger: logger, status: status, update_status: nil) }
 
   BRAVE_URL = "https://api.search.brave.com/res/v1/web/search"
 

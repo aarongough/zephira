@@ -7,7 +7,7 @@ RSpec.describe Zephira::Tools::DeleteFile do
 
   let(:logger) { double("logger", info: nil, warn: nil, error: nil) }
   let(:status) { double("status", verbose: nil, warn: nil) }
-  let(:agent) { double("agent", status: status, logger: logger) }
+  let(:agent) { double("agent", status: status, logger: logger, update_status: nil) }
 
   describe ".parameters" do
     it "defines file_path and intent" do

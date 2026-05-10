@@ -3,7 +3,7 @@ require "spec_helper"
 RSpec.describe Zephira::Tools do
   let(:logger) { double(:logger, info: nil, warn: nil) }
   let(:status) { double(:status, verbose: nil, warn: nil) }
-  let(:agent) { double(:agent, logger: logger, status: status) }
+  let(:agent) { double(:agent, logger: logger, status: status, update_status: nil) }
 
   # Stub tool class registered directly into Zephira::Tools for isolation
   let(:stub_tool) do
