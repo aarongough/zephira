@@ -37,7 +37,7 @@ module Zephira
     end
 
     def size
-      @messages.sum { |m| approx_tokens_by_regex(m[:content].to_s) }
+      @messages.sum { |message| approx_tokens_by_regex(message[:content].to_s) }
     end
 
     def compact(response_model:, api_key:, token_limit: Float::INFINITY)
@@ -49,7 +49,7 @@ module Zephira
       end
 
       chunks.each do |chunk|
-        conversation = chunk.map { |m| "#{m[:role]}: #{m[:content]}" }.join("\n")
+        conversation = chunk.map { |message| "#{message[:role]}: #{message[:content]}" }.join("\n")
         summary = response_model.simple_inference(
           api_key: api_key,
           messages: [{role: "user", content: "Summarize the following conversation:\n#{conversation}"}]
@@ -106,11 +106,11 @@ module Zephira
     end
 
     def persist_entry(entry)
-      File.open(@storage_file, "a") { |f| f.puts JSON.generate(entry) }
+      File.open(@storage_file, "a") { |file| file.puts JSON.generate(entry) }
     end
 
     def write_all_to_disk
-      File.open(@storage_file, "w") { |f| @messages.each { |entry| f.puts JSON.generate(entry) } }
+      File.open(@storage_file, "w") { |file| @messages.each { |entry| file.puts JSON.generate(entry) } }
     end
   end
 end

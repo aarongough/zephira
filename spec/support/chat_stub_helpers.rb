@@ -19,4 +19,4 @@ module ChatStubHelpers
   end
 end
 
-RSpec.configure { |c| c.include ChatStubHelpers, :integration }
+RSpec.configure { |config| config.include ChatStubHelpers, :integration }

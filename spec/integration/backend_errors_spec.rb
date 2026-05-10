@@ -25,10 +25,10 @@ RSpec.describe "backend HTTP errors", :integration do
   let(:agent) { Zephira::Agent.new }
 
   let(:spinner_double) do
-    instance_double(TTY::Spinner).tap do |s|
-      allow(s).to receive(:on)
-      allow(s).to receive(:spin)
-      allow(s).to receive(:run) { |_, &block| block&.call }
+    instance_double(TTY::Spinner).tap do |spinner|
+      allow(spinner).to receive(:on)
+      allow(spinner).to receive(:spin)
+      allow(spinner).to receive(:run) { |_, &block| block&.call }
     end
   end
 

@@ -41,13 +41,13 @@ module Zephira
     end
 
     def run(name:, args:, agent:)
-      tool = constants.find { |t| t.name == name }
+      tool = constants.find { |candidate| candidate.name == name }
       raise ToolNotFoundError, "Tool not found: #{name}" if tool.nil?
 
       result = begin
         tool.run(args: args, agent: agent)
-      rescue => e
-        raise ToolExecutionError, "Encountered an error when executing tool #{name}: #{e.message}"
+      rescue => exception
+        raise ToolExecutionError, "Encountered an error when executing tool #{name}: #{exception.message}"
       end
 
       validate_result(result)

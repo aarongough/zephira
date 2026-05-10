@@ -13,16 +13,14 @@ module Zephira
         end
 
         def run(agent:, args:)
-          model_classes = Zephira::Models.constants(false)
-            .map { |c| Zephira::Models.const_get(c) }
-            .reject { |cls| cls == Zephira::Models::BaseModel }
+          model_classes = Zephira::Models.available
 
           if args.nil? || args.empty?
             puts "Available models:"
-            model_classes.each do |m|
-              marker = (m == agent.model) ? "*" : " "
-              suffix = (m == agent.model) ? " (current)" : ""
-              puts "  #{marker} #{m.model_name}#{suffix}"
+            model_classes.each do |model|
+              marker = (model == agent.model) ? "*" : " "
+              suffix = (model == agent.model) ? " (current)" : ""
+              puts "  #{marker} #{model.model_name}#{suffix}"
             end
             puts
             return
@@ -44,7 +42,7 @@ module Zephira
             puts "Model changed to #{target.model_name}"
           else
             puts "Unknown model '#{model_name}'. Available models:"
-            model_classes.each { |m| puts "    #{m.model_name}" }
+            model_classes.each { |model| puts "    #{model.model_name}" }
           end
         end
       end

@@ -114,7 +114,7 @@ module Zephira
               match: false
             }
           when "end"
-            results << context_buffer.sort_by { |e| e[:line] }
+            results << context_buffer.sort_by { |entry| entry[:line] }
             break if max_results && results.size >= max_results
           end
         end

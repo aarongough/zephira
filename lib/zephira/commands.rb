@@ -4,7 +4,7 @@ module Zephira
   class Commands
     def self.load(paths:)
       paths.each do |path|
-        Dir.glob(File.join(path, "**", "*.rb")).each { |f| require f }
+        Dir.glob(File.join(path, "**", "*.rb")).each { |file| require file }
       end
       new(paths)
     end
@@ -20,7 +20,7 @@ module Zephira
     end
 
     def run(name:, args:, agent:)
-      command_class = constants.find { |cmd| cmd.name == name }
+      command_class = constants.find { |command| command.name == name }
       if command_class.nil?
         puts "Unknown command '/#{name}'. Type /help for a list of commands."
       else
@@ -29,7 +29,7 @@ module Zephira
     end
 
     def to_h
-      constants.map { |cmd| {name: cmd.name, description: cmd.description} }
+      constants.map { |command| {name: command.name, description: command.description} }
     end
   end
 end

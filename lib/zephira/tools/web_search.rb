@@ -55,8 +55,8 @@ module Zephira
         queries = arg(:queries)
         begin
           validate(queries, arg_path: "queries", type: Array, allow_empty: false)
-        rescue ToolUseError => e
-          return error_result(message: e.message)
+        rescue ToolUseError => error
+          return error_result(message: error.message)
         end
 
         api_key = Config.read("ZEPHIRA_BRAVE_SEARCH_API_KEY").to_s
@@ -64,12 +64,12 @@ module Zephira
           return error_result(message: "ZEPHIRA_BRAVE_SEARCH_API_KEY not set (env var or .zephira.yml)")
         end
 
-        results = queries.map { |q| run_query(q, api_key) }
+        results = queries.map { |query| run_query(query, api_key) }
         success_result(results)
-      rescue => e
-        agent.logger.error("Web search failed: #{e.message}")
-        agent.status.warn("ERROR: Web search failed: #{e.message}")
-        error_result(message: "Web search failed: #{e.message}")
+      rescue => error
+        agent.logger.error("Web search failed: #{error.message}")
+        agent.status.warn("ERROR: Web search failed: #{error.message}")
+        error_result(message: "Web search failed: #{error.message}")
       end
 
       private
@@ -108,9 +108,9 @@ module Zephira
           agent.status.verbose(" • Search complete: '#{query}'")
           agent.logger.info("Search complete: '#{query}'")
           success_result(data)
-        rescue JSON::ParserError => e
+        rescue JSON::ParserError => error
           agent.status.warn(" • ERROR: Invalid JSON for '#{query}'")
-          error_result(message: "Invalid JSON: #{e.message}")
+          error_result(message: "Invalid JSON: #{error.message}")
         end
       end
     end

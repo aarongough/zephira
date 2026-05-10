@@ -46,7 +46,7 @@ module Zephira
           tools: format_tools(agent.tools)
         )
 
-        tool_calls = Array(response["tool_calls"]).select { |tc| tc["type"] == "function" }
+        tool_calls = Array(response["tool_calls"]).select { |tool_call| tool_call["type"] == "function" }
 
         if tool_calls.any?
           messages << {role: "assistant", content: response["content"], tool_calls: response["tool_calls"]}

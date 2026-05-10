@@ -35,8 +35,8 @@ module Zephira
       def run
         begin
           cmd = validate(arg(:command), arg_path: "command", type: String, allow_empty: false)
-        rescue ToolUseError => e
-          return error_result(message: e.message)
+        rescue ToolUseError => error
+          return error_result(message: error.message)
         end
 
         agent.status.verbose(" • Running shell command: '#{cmd}'")
@@ -64,8 +64,8 @@ module Zephira
         success_result(status: status_obj.exitstatus, stdout: stdout_str, stderr: stderr_str)
       rescue Errno::ENOENT
         error_result(message: "Command not found: #{arg(:command)}")
-      rescue => e
-        error_result(message: "Execution error: #{e.message}")
+      rescue => error
+        error_result(message: "Execution error: #{error.message}")
       end
 
       private

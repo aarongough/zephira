@@ -42,11 +42,11 @@ module Zephira
 
         agent.logger.info "OpenAI API response: #{raw.inspect}"
         raw.dig("choices", 0, "message") || {}
-      rescue => e
-        agent.logger.error "OpenAI API request failed: #{e.class}: #{e.message}"
-        if e.respond_to?(:response) && e.response
-          agent.logger.error "Response status: #{e.response[:status]}"
-          agent.logger.error "Response body: #{e.response[:body]}"
+      rescue => exception
+        agent.logger.error "OpenAI API request failed: #{exception.class}: #{exception.message}"
+        if exception.respond_to?(:response) && exception.response
+          agent.logger.error "Response status: #{exception.response[:status]}"
+          agent.logger.error "Response body: #{exception.response[:body]}"
         end
         raise
       end
@@ -56,8 +56,8 @@ module Zephira
       def debug_log(parameters)
         log_dir = File.join(Dir.pwd, ".zephira", "logs")
         FileUtils.mkdir_p(log_dir)
-        ts = Time.now.utc.strftime("%Y%m%dT%H%M%S%L")
-        filepath = File.join(log_dir, "#{ts}_openai_request.log")
+        timestamp = Time.now.utc.strftime("%Y%m%dT%H%M%S%L")
+        filepath = File.join(log_dir, "#{timestamp}_openai_request.log")
         File.write(filepath, JSON.pretty_generate({
           timestamp: Time.now.utc.iso8601,
           base_url: @base_url,

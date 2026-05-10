@@ -37,8 +37,8 @@ module Zephira
         paths = arg(:file_paths)
         begin
           validate(paths, arg_path: "file_paths", type: Array, allow_empty: false)
-        rescue ToolUseError => e
-          return error_result(message: e.message)
+        rescue ToolUseError => error
+          return error_result(message: error.message)
         end
 
         results = paths.map do |file_path|
@@ -53,7 +53,7 @@ module Zephira
 
               data = if size > DEFAULT_MAX_BYTES
                 agent.status.verbose(" • File size #{size} bytes exceeds limit of #{DEFAULT_MAX_BYTES} bytes, truncating content")
-                ::File.open(expanded_path, "rb") { |f| f.read(DEFAULT_MAX_BYTES) }
+                ::File.open(expanded_path, "rb") { |file| file.read(DEFAULT_MAX_BYTES) }
               else
                 ::File.binread(expanded_path)
               end

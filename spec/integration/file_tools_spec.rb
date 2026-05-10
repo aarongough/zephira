@@ -33,7 +33,7 @@ RSpec.describe "file tools", :integration do
     it "can read multiple files at once" do
       File.write("other.rb", "puts 'other'")
       result = run_tool("read_file", {file_paths: ["hello.rb", "other.rb"], intent: "read both"})
-      paths = result[:data].map { |f| f["path"] }
+      paths = result[:data].map { |file| file["path"] }
       expect(paths).to contain_exactly("hello.rb", "other.rb")
     end
   end

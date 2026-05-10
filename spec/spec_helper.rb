@@ -25,7 +25,7 @@ require "pp"
 require "fakefs/spec_helpers"
 
 # Load custom matchers from spec/support
-Dir[File.expand_path("support/**/*.rb", __dir__)].sort.each { |f| require f }
+Dir[File.expand_path("support/**/*.rb", __dir__)].sort.each { |file| require file }
 
 RSpec.configure do |config|
   config.disable_monkey_patching!

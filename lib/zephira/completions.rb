@@ -4,7 +4,7 @@ module Zephira
   class Completions
     def self.load(paths:)
       paths.each do |path|
-        Dir.glob(File.join(path, "**", "*.rb")).each { |f| require f }
+        Dir.glob(File.join(path, "**", "*.rb")).each { |file| require file }
       end
       new(paths)
     end
@@ -20,7 +20,7 @@ module Zephira
     end
 
     def complete_all(input:, agent:)
-      constants.flat_map { |c| c.complete(input: input, agent: agent) }.uniq
+      constants.flat_map { |completion| completion.complete(input: input, agent: agent) }.uniq
     end
   end
 end

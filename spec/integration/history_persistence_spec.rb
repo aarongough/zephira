@@ -21,7 +21,7 @@ RSpec.describe "history persistence", :integration do
     agent_a.history.append(role: "assistant", content: "I will remember.")
 
     agent_b = new_agent
-    contents = agent_b.history.messages.map { |m| m[:content] }
+    contents = agent_b.history.messages.map { |message| message[:content] }
     expect(contents).to include("remember this", "I will remember.")
   end
 
@@ -41,7 +41,7 @@ RSpec.describe "history persistence", :integration do
     agent_a.history.append(role: "assistant", content: "Done.")
 
     agent_b = new_agent
-    tool_msgs = agent_b.history.messages.select { |m| m[:role] == "tool" }
+    tool_msgs = agent_b.history.messages.select { |message| message[:role] == "tool" }
     expect(tool_msgs).to be_empty
   end
 

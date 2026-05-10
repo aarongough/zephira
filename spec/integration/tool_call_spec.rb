@@ -42,7 +42,7 @@ RSpec.describe "tool call round-trip", :integration do
       chat_text("Done.")
     )
     run_inference
-    tool_msgs = agent.history.messages.select { |m| m[:role] == "tool" }
+    tool_msgs = agent.history.messages.select { |message| message[:role] == "tool" }
     expect(tool_msgs.first[:content]).to include("hello")
   end
 
@@ -60,7 +60,7 @@ RSpec.describe "tool call round-trip", :integration do
       chat_text("Done.")
     )
     run_inference
-    tool_msgs = agent.history.messages.select { |m| m[:role] == "tool" }
+    tool_msgs = agent.history.messages.select { |message| message[:role] == "tool" }
     expect(tool_msgs.first[:content]).to include("must be supplied")
   end
 
@@ -72,7 +72,7 @@ RSpec.describe "tool call round-trip", :integration do
     )
     result = run_inference
     expect(result).to eq("All done.")
-    tool_msgs = agent.history.messages.select { |m| m[:role] == "tool" }
+    tool_msgs = agent.history.messages.select { |message| message[:role] == "tool" }
     expect(tool_msgs.size).to eq(2)
   end
 end

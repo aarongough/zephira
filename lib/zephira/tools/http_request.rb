@@ -83,7 +83,7 @@ module Zephira
           end
 
         req = request_class.new(uri)
-        headers.each { |k, v| req[k] = v.to_s }
+        headers.each { |key, value| req[key] = value.to_s }
 
         if body
           if body.is_a?(Hash)
@@ -104,8 +104,8 @@ module Zephira
         body = body.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
 
         success_result(status: response.code.to_i, headers: response.each_header.to_h, body: body)
-      rescue => e
-        error_result(message: e.message)
+      rescue => error
+        error_result(message: error.message)
       end
     end
   end

@@ -126,9 +126,9 @@ module Zephira
 
       if history.session_start > 0
         history.messages[0...history.session_start]
-          .select { |m| m[:role] == "user" }
-          .map { |m| m[:content] }
-          .each { |cmd| Readline::HISTORY.push(cmd) }
+          .select { |message| message[:role] == "user" }
+          .map { |message| message[:content] }
+          .each { |command| Readline::HISTORY.push(command) }
       end
 
       logo_width = LOGO.each_line.first.chomp.length
