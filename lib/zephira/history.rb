@@ -41,7 +41,7 @@ module Zephira
     end
 
     def size
-      @messages.sum { |message| approx_tokens_by_regex(message[:content].to_s) }
+      @messages.sum { |message| Tokens.estimate(message[:content]) }
     end
 
     def compact(response_model:, api_key:, agent:, token_limit: Float::INFINITY)
@@ -101,10 +101,6 @@ module Zephira
     end
 
     private
-
-    def approx_tokens_by_regex(text)
-      text.scan(/\w+|[^\s\w]/).size
-    end
 
     def load_from_disk
       File.readlines(@storage_file).map { |line| JSON.parse(line, symbolize_names: true) }

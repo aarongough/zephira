@@ -103,7 +103,7 @@ module Zephira
 
     def thinking(model_class)
       thinkmojis = %w[🤔 🧠 💭 🤯 🧐 ⏳ 🔄 🌀 🤨 💡 🧩 🔍 📚 ⚙️]
-      token_count = rough_token_count(history.messages.to_json)
+      token_count = Tokens.estimate(history.messages.to_json)
       update_status("Thinking... #{thinkmojis.shuffle.first} " + Formatter.color(:grey, "(#{model_class.model_name} - #{token_count} tokens)"))
     end
 
@@ -125,7 +125,7 @@ module Zephira
     end
 
     def compact_history(force: false)
-      current = rough_token_count(JSON.dump(@history.messages))
+      current = Tokens.estimate(JSON.dump(@history.messages))
       threshold = (@model.context_limit * COMPACTION_TRIGGER_RATIO).to_i
       target = force ? [current / 2, 1].max : (@model.context_limit * COMPACTION_TARGET_RATIO).to_i
 
@@ -139,7 +139,7 @@ module Zephira
         agent: self,
         token_limit: target
       )
-      after = rough_token_count(JSON.dump(@history.messages))
+      after = Tokens.estimate(JSON.dump(@history.messages))
       puts Formatter.color(:grey, "  ✦ History compacted (~#{after} tokens).")
       true
     end
@@ -171,7 +171,7 @@ module Zephira
       puts "  ask me what I can do for you... or type '/help' for a list of commands."
 
       loop do
-        context_used = rough_token_count(JSON.dump(@history.messages))
+        context_used = Tokens.estimate(JSON.dump(@history.messages))
         context_limit = @model.context_limit
         context_pct = ((context_limit - context_used).to_f / context_limit * 100).clamp(0, 100).to_i
         width = screen_width
@@ -251,11 +251,6 @@ module Zephira
     end
 
     private
-
-    def rough_token_count(text)
-      return 0 if text.nil? || text.empty?
-      text.split.size
-    end
 
     def load_additional_instructions
       instructions = {}
