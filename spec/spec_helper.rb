@@ -33,4 +33,27 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  config.before(:each) do |example|
+    next if example.metadata[:show_output]
+
+    @_real_stdout = $stdout
+    @_real_stderr = $stderr
+    $stdout = StringIO.new
+    $stderr = StringIO.new
+  end
+
+  config.after(:each) do
+    $stdout = @_real_stdout if @_real_stdout
+    $stderr = @_real_stderr if @_real_stderr
+  end
+
+  # Default Config.read to return nil so per-test stubs can override only the
+  # specific keys they care about without tripping strict-arg verification on
+  # other reads (e.g. ZEPHIRA_DEBUG). Opt out with `:real_config` for tests
+  # that exercise Config itself.
+  config.before(:each) do |example|
+    next if example.metadata[:real_config]
+    allow(Zephira::Config).to receive(:read).and_return(nil)
+  end
 end
