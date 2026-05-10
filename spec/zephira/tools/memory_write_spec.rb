@@ -28,7 +28,7 @@ RSpec.describe Zephira::Tools::MemoryWrite do
       it "creates memory file and returns success" do
         result = described_class.run(args: {"key" => "name", "value" => "Alice", "intent" => described_class.name}, agent: agent)
         expect(result).to be_success("Memory written: 'name'")
-        memory = YAML.load_file(Zephira::Tools::MemoryWrite::MEMORY_PATH)
+        memory = YAML.load_file(Zephira::Tools::MemoryStore::PATH)
         expect(memory["name"]).to eq("Alice")
       end
 
@@ -41,12 +41,12 @@ RSpec.describe Zephira::Tools::MemoryWrite do
     context "when overwriting an existing key" do
       before do
         FileUtils.mkdir_p(".zephira")
-        File.write(Zephira::Tools::MemoryWrite::MEMORY_PATH, {"name" => "old"}.to_yaml)
+        File.write(Zephira::Tools::MemoryStore::PATH, {"name" => "old"}.to_yaml)
       end
 
       it "updates the value" do
         described_class.run(args: {"key" => "name", "value" => "new", "intent" => described_class.name}, agent: agent)
-        memory = YAML.load_file(Zephira::Tools::MemoryWrite::MEMORY_PATH)
+        memory = YAML.load_file(Zephira::Tools::MemoryStore::PATH)
         expect(memory["name"]).to eq("new")
       end
     end

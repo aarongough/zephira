@@ -1,12 +1,8 @@
 # frozen_string_literal: true
 
-require "yaml"
-
 module Zephira
   class Tools
     class MemoryList < BaseTool
-      MEMORY_PATH = ".zephira/memory.yml"
-
       class << self
         def name
           "memory_list"
@@ -28,16 +24,9 @@ module Zephira
       end
 
       def run
-        memory = load_memory
-        agent.status.verbose(" • Memory list: #{memory.size} keys")
-        success_result(memory.keys)
-      end
-
-      private
-
-      def load_memory
-        return {} unless ::File.exist?(MEMORY_PATH)
-        YAML.load_file(MEMORY_PATH) || {}
+        keys = MemoryStore.keys
+        agent.status.verbose(" • Memory list: #{keys.size} keys")
+        success_result(keys)
       end
     end
   end

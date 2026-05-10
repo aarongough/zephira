@@ -1,12 +1,8 @@
 # frozen_string_literal: true
 
-require "yaml"
-
 module Zephira
   class Tools
     class MemoryRead < BaseTool
-      MEMORY_PATH = ".zephira/memory.yml"
-
       class << self
         def name
           "memory_read"
@@ -30,21 +26,13 @@ module Zephira
 
       def run
         key = validate(arg(:key), arg_path: "key", type: String)
-        memory = load_memory
 
-        unless memory.key?(key)
+        unless MemoryStore.key?(key)
           return error_result(message: "Key not found: #{key}")
         end
 
         agent.status.verbose(" • Memory read: '#{key}'")
-        success_result(memory[key])
-      end
-
-      private
-
-      def load_memory
-        return {} unless ::File.exist?(MEMORY_PATH)
-        YAML.load_file(MEMORY_PATH) || {}
+        success_result(MemoryStore.read(key))
       end
     end
   end
