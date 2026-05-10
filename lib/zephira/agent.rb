@@ -284,8 +284,8 @@ module Zephira
     end
 
     def resolve_model
-      name = Config.read("ZEPHIRA_MODEL") || "gpt-4.1-mini"
-      Models.find_by_name(name) || Models::ChatGpt41Mini
+      name = Config.read("ZEPHIRA_MODEL") || "gpt-5.4"
+      Models.find_by_name(name) || Models::Gpt54
     end
 
     def screen_width

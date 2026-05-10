@@ -4,6 +4,18 @@ require "json"
 
 module Zephira
   module Models
+    # Base class for all model definitions.
+    #
+    # To add a new model:
+    #   1. Drop a new file in `lib/zephira/models/<name>.rb` — it is auto-loaded.
+    #   2. Subclass `BaseModel` and implement `model_name` and `context_limit`.
+    #   3. Optionally override `backend` to point at a specific backend class.
+    #      Defaults to `Backends::OpenAiCompatible` (works for any provider with an
+    #      OpenAI-compatible API). For provider-specific quirks (Mistral, Anthropic
+    #      tool-call shape, etc.) define a dedicated backend class and return it
+    #      from `backend`.
+    #
+    # `ENV["ZEPHIRA_BACKEND"]` overrides per-model `backend` for debugging.
     class BaseModel
       def self.model_name
         raise NotImplementedError, "You must implement the model_name method"
@@ -13,13 +25,18 @@ module Zephira
         raise NotImplementedError, "You must implement the context_limit method"
       end
 
+      # Override in subclasses to bind a model to a specific backend class.
+      def self.backend
+        Zephira::Backends::OpenAiCompatible
+      end
+
       def self.backend_class
         identifier = ENV["ZEPHIRA_BACKEND"]
         if identifier
           found = Zephira::Backends.find_by_name(identifier)
           return found if found
         end
-        Zephira::Backends::OpenAiCompatible
+        backend
       end
 
       def self.format_tools(tools)
@@ -37,28 +54,28 @@ module Zephira
 
       def self.inference(api_key:, agent:, messages: [], base_url: nil)
         client = backend_class.new(api_key: api_key, agent: agent, base_url: base_url)
-        agent.thinking(self)
 
-        response = client.chat(
-          model_name: model_name,
-          messages: messages,
-          agent: agent,
-          tools: format_tools(agent.tools)
-        )
+        loop do
+          agent.thinking(self)
+          response = client.chat(
+            model_name: model_name,
+            messages: messages,
+            agent: agent,
+            tools: format_tools(agent.tools)
+          )
 
-        tool_calls = Array(response["tool_calls"]).select { |tool_call| tool_call["type"] == "function" }
+          tool_calls = Array(response["tool_calls"]).select { |tool_call| tool_call["type"] == "function" }
 
-        if tool_calls.any?
+          if tool_calls.empty?
+            content = response["content"]
+            return (content.nil? || content.empty?) ? nil : content
+          end
+
           messages << {role: "assistant", content: response["content"], tool_calls: response["tool_calls"]}
           agent.history.append(role: "assistant", content: response["content"], tool_calls: response["tool_calls"])
 
           tool_calls.each do |call|
-            args = begin
-              JSON.parse(call["function"]["arguments"] || "{}", symbolize_names: true)
-            rescue JSON::ParserError
-              {}
-            end
-
+            args = parse_tool_arguments(call, agent: agent)
             result = agent.run_tool(name: call["function"]["name"], args: args)
 
             content = if result.is_a?(Hash) && result.key?(:outcome)
@@ -74,11 +91,6 @@ module Zephira
             messages << {role: "tool", tool_call_id: call["id"], content: content}
             agent.history.append(role: "tool", tool_call_id: call["id"], content: content)
           end
-
-          inference(api_key: api_key, agent: agent, messages: messages, base_url: base_url)
-        else
-          content = response["content"]
-          (content.nil? || content.empty?) ? nil : content
         end
       end
 
@@ -86,6 +98,14 @@ module Zephira
         client = backend_class.new(api_key: api_key, agent: agent, base_url: base_url)
         agent.thinking(self) if agent.respond_to?(:thinking)
         client.chat(model_name: model_name, messages: messages, agent: agent)["content"]
+      end
+
+      def self.parse_tool_arguments(call, agent:)
+        raw = call["function"]["arguments"] || "{}"
+        JSON.parse(raw, symbolize_names: true)
+      rescue JSON::ParserError => exception
+        agent&.logger&.error("Failed to parse tool arguments for #{call["function"]["name"]}: #{exception.message}. Raw: #{raw.inspect}")
+        {}
       end
     end
   end

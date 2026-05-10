@@ -48,10 +48,10 @@ RSpec.describe Zephira::Agent do
       expect(agent.model.model_name).to eq("claude-3-5-sonnet-20241022")
     end
 
-    it "falls back to ChatGpt41Mini for unknown model names" do
+    it "falls back to Gpt54 for unknown model names" do
       allow(Zephira::Config).to receive(:read).with("ZEPHIRA_MODEL").and_return("no-such-model")
       agent = described_class.new
-      expect(agent.model).to eq(Zephira::Models::ChatGpt41Mini)
+      expect(agent.model).to eq(Zephira::Models::Gpt54)
     end
 
     it "defaults verbose to false" do
