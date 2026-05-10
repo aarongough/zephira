@@ -24,6 +24,7 @@ module Zephira
     INNER_BR = "┘"
     INNER_H  = "─"
     INNER_V  = "│"
+    INNER_PADDING = 3
 
     class << self
       def exec_if_needed!(argv)
@@ -101,16 +102,17 @@ module Zephira
       end
 
       def inner_top(max_width)
-        Formatter.color(:red, INNER_TL + INNER_H * (max_width + 6) + INNER_TR)
+        Formatter.color(:red, INNER_TL + INNER_H * (max_width + INNER_PADDING * 2) + INNER_TR)
       end
 
       def inner_bottom(max_width)
-        Formatter.color(:red, INNER_BL + INNER_H * (max_width + 6) + INNER_BR)
+        Formatter.color(:red, INNER_BL + INNER_H * (max_width + INNER_PADDING * 2) + INNER_BR)
       end
 
       def inner_row(text, max_width)
         padding = " " * [max_width - visible_length(text), 0].max
-        Formatter.color(:red, INNER_V) + "   " + text + padding + "   " + Formatter.color(:red, INNER_V)
+        pad = " " * INNER_PADDING
+        Formatter.color(:red, INNER_V) + pad + text + padding + pad + Formatter.color(:red, INNER_V)
       end
 
       def visible_length(str)

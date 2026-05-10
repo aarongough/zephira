@@ -3,7 +3,7 @@
 require "spec_helper"
 
 RSpec.describe Zephira::Commands do
-  let(:commands) { described_class.new([]) }
+  let(:commands) { described_class.new }
 
   describe "#constants" do
     it "returns all command classes" do

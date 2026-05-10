@@ -20,7 +20,7 @@ RSpec.describe Zephira::Tools do
     end)
   end
 
-  let(:tools) { described_class.new([]) }
+  let(:tools) { described_class.new }
 
   before { stub_tool }
 
@@ -44,7 +44,7 @@ RSpec.describe Zephira::Tools do
 
   describe "#to_h" do
     it "returns an array of tool hashes with name, description, and parameters" do
-      entry = tools.to_h.find { |t| t[:name] == "stub_tool" }
+      entry = tools.to_h.find { |tool| tool[:name] == "stub_tool" }
       expect(entry).to eq({
         name: "stub_tool",
         description: "A stub tool",

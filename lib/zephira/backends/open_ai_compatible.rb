@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+require "faraday"
+require "fileutils"
+require "json"
+require "time"
+
 module Zephira
   module Backends
     class OpenAiCompatible

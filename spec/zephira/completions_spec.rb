@@ -3,7 +3,7 @@
 require "spec_helper"
 
 RSpec.describe Zephira::Completions do
-  let(:completions) { described_class.new([]) }
+  let(:completions) { described_class.new }
   let(:agent) { double("agent") }
 
   describe "#constants" do

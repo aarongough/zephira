@@ -6,11 +6,7 @@ module Zephira
       paths.each do |path|
         Dir.glob(File.join(path, "**", "*.rb")).each { |file| require file }
       end
-      new(paths)
-    end
-
-    def initialize(paths)
-      @paths = paths
+      new
     end
 
     def constants

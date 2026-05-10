@@ -4,8 +4,10 @@ require "optparse"
 
 module Zephira
   class CLI
+    DANGEROUS_SKIP_SANDBOX_FLAG = "--dangerously-skip-sandbox"
+
     def initialize(argv)
-      ENV["ZEPHIRA_SANDBOX"] = "false" if argv.include?("--dangerously-skip-sandbox")
+      ENV["ZEPHIRA_SANDBOX"] = "false" if argv.include?(DANGEROUS_SKIP_SANDBOX_FLAG)
       Zephira::Sandbox.exec_if_needed!(argv)
       option_parser.parse!(argv)
       Zephira::Agent.new.run_loop
@@ -30,7 +32,7 @@ module Zephira
           exit(0)
         end
 
-        opts.on("--dangerously-skip-sandbox", "Skip sandbox and run without isolation") do
+        opts.on(DANGEROUS_SKIP_SANDBOX_FLAG, "Skip sandbox and run without isolation") do
           ENV["ZEPHIRA_SANDBOX"] = "false"
         end
       end

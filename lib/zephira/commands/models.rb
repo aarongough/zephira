@@ -35,7 +35,7 @@ module Zephira
             return
           end
 
-          target = model_classes.find { |m| m.model_name.downcase == model_name.downcase }
+          target = Zephira::Models.find_by_name(model_name)
 
           if target
             agent.model = target

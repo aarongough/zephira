@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
+require "fileutils"
+
 module Zephira
   class Logger
     LOG_LEVELS = %i[debug info warn error].freeze
 
-    attr_reader :logfile
-    attr_reader :log_level
+    attr_reader :logfile, :log_level
 
     def initialize(file_path:, log_level: :debug)
       FileUtils.mkdir_p(File.dirname(file_path))
@@ -39,9 +40,7 @@ module Zephira
     end
 
     def should_log?(level)
-      return true if LOG_LEVELS.index(level) >= LOG_LEVELS.index(@log_level)
-
-      false
+      LOG_LEVELS.index(level) >= LOG_LEVELS.index(@log_level)
     end
   end
 end
