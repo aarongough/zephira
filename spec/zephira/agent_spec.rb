@@ -104,6 +104,30 @@ RSpec.describe Zephira::Agent do
     end
   end
 
+  describe "#compact_history" do
+    it "returns false when below threshold and not forced" do
+      expect(agent.compact_history(force: false)).to be false
+    end
+
+    it "returns false when history is empty even when forced" do
+      expect(agent.compact_history(force: true)).to be false
+    end
+
+    it "delegates to history.compact when forced and non-empty" do
+      agent.history.append(role: "user", content: "hello world this is content")
+      allow(agent.history).to receive(:compact)
+      expect { agent.compact_history(force: true) }.to output(/Compacting/).to_stdout
+      expect(agent.history).to have_received(:compact)
+    end
+
+    it "skips compaction when below auto-trigger threshold" do
+      agent.history.append(role: "user", content: "tiny")
+      allow(agent.history).to receive(:compact)
+      agent.compact_history(force: false)
+      expect(agent.history).not_to have_received(:compact)
+    end
+  end
+
   describe "#run_loop" do
     before do
       allow(Readline).to receive(:completion_proc=)

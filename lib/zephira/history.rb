@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require "fileutils"
+require "json"
+require "time"
+
 module Zephira
   class History
     STORAGE_DIR = ".zephira"
@@ -40,11 +44,11 @@ module Zephira
       @messages.sum { |message| approx_tokens_by_regex(message[:content].to_s) }
     end
 
-    def compact(response_model:, api_key:, token_limit: Float::INFINITY)
+    def compact(response_model:, api_key:, agent:, token_limit: Float::INFINITY)
       return unless size > token_limit
 
       chunks = []
-      while size > token_limit
+      while size > token_limit && !@messages.empty?
         chunks << @messages.shift(COMPACTION_CHUNK_SIZE)
       end
 
@@ -52,6 +56,7 @@ module Zephira
         conversation = chunk.map { |message| "#{message[:role]}: #{message[:content]}" }.join("\n")
         summary = response_model.simple_inference(
           api_key: api_key,
+          agent: agent,
           messages: [{role: "user", content: "Summarize the following conversation:\n#{conversation}"}]
         )
 

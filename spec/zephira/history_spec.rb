@@ -125,7 +125,7 @@ RSpec.describe Zephira::History do
       hist = described_class.new
       50.times { |i| hist.append(role: "user", content: "m#{i}") }
 
-      hist.compact(response_model: response_model, api_key: "test-key", token_limit: 10)
+      hist.compact(response_model: response_model, api_key: "test-key", agent: nil, token_limit: 10)
 
       expect(hist.messages.first[:role]).to eq("system")
       expect(hist.messages.first[:content]).to start_with("[Summary")
@@ -136,7 +136,7 @@ RSpec.describe Zephira::History do
       hist = described_class.new
       hist.append(role: "user", content: "short")
 
-      hist.compact(response_model: response_model, api_key: "test-key", token_limit: 10)
+      hist.compact(response_model: response_model, api_key: "test-key", agent: nil, token_limit: 10)
 
       expect(hist.messages.first[:content]).to eq("short")
     end
