@@ -2,14 +2,14 @@
 
 module Zephira
   class Commands
-    class Models
+    class Model
       class << self
         def name
-          "models"
+          "model"
         end
 
         def description
-          "List available models or switch: /models set MODEL_NAME"
+          "List available models or switch: /model set MODEL_NAME"
         end
 
         def run(agent:, args:)
@@ -31,7 +31,7 @@ module Zephira
           model_name = parts.first
 
           if model_name.nil? || model_name.strip.empty?
-            puts "Usage: /models set MODEL_NAME"
+            puts "Usage: /model set MODEL_NAME"
             return
           end
 

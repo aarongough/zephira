@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe Zephira::Commands::Models do
+RSpec.describe Zephira::Commands::Model do
   let(:model_a) { double("ModelA", model_name: "gpt-4.1-mini") }
   let(:model_b) { double("ModelB", model_name: "claude-sonnet-4-5") }
   let(:agent) { double("agent", model: model_a, "model=": nil) }

@@ -24,7 +24,7 @@ RSpec.describe "commands dispatch", :integration do
 
     it "includes all registered commands" do
       output = capture_stdout { run_command("help") }
-      %w[help history clear bye about models].each do |cmd|
+      %w[help history clear bye about model].each do |cmd|
         expect(output).to include("/#{cmd}")
       end
     end
@@ -72,22 +72,22 @@ RSpec.describe "commands dispatch", :integration do
     end
   end
 
-  describe "/models" do
+  describe "/model" do
     it "lists available models" do
-      expect { run_command("models") }.to output(/gpt-4.1-mini/).to_stdout
+      expect { run_command("model") }.to output(/gpt-4.1-mini/).to_stdout
     end
 
     it "shows which model is active" do
-      expect { run_command("models") }.to output(/\*|active|current/i).to_stdout
+      expect { run_command("model") }.to output(/\*|active|current/i).to_stdout
     end
 
     it "changes the model with 'set MODEL'" do
-      run_command("models", ["set", "claude-3-5-sonnet-20241022"])
+      run_command("model", ["set", "claude-3-5-sonnet-20241022"])
       expect(agent.model.model_name).to eq("claude-3-5-sonnet-20241022")
     end
 
     it "prints an error for an unknown model name" do
-      expect { run_command("models", ["set", "no-such-model"]) }.to output(/not found|unknown/i).to_stdout
+      expect { run_command("model", ["set", "no-such-model"]) }.to output(/not found|unknown/i).to_stdout
     end
   end
 

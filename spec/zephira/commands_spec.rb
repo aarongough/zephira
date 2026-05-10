@@ -8,7 +8,7 @@ RSpec.describe Zephira::Commands do
   describe "#constants" do
     it "returns all command classes" do
       names = commands.constants.map(&:name)
-      expect(names).to include("help", "clear", "history", "models", "about", "bye")
+      expect(names).to include("help", "clear", "history", "model", "about", "bye")
     end
   end
 
