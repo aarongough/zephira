@@ -25,7 +25,7 @@ module Zephira
           raise ToolUseError, "argument `#{arg_path}` must be of type #{type} and non-empty"
         end
 
-        if type == String && !allow_empty && actual.respond_to?(:strip) && actual.strip.empty?
+        if !allow_empty && type == String && actual.strip.empty?
           raise ToolUseError, "argument `#{arg_path}` must be of type #{type} and non-empty"
         end
 
