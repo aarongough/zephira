@@ -2,13 +2,13 @@
 
 module Zephira
   module Models
-    class GptO4Mini < BaseModel
+    class Gpt54 < BaseModel
       def self.model_name
-        "o4-mini"
+        "gpt-5.4"
       end
 
       def self.context_limit
-        200_000
+        1_047_576
       end
     end
   end

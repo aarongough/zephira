@@ -11,8 +11,11 @@ RSpec.describe Zephira::Models do
       names = described_class.available.map(&:model_name)
       expect(names).to include(
         "claude-3-5-sonnet-20241022",
-        "gpt-4.1-mini-2025-04-14",
-        "o4-mini-2025-04-16",
+        "gpt-4.1",
+        "gpt-4.1-mini",
+        "gpt-5.4",
+        "gpt-5.5",
+        "o4-mini",
         "meta-llama/llama-4-maverick-17b-128e-instruct"
       )
     end
@@ -20,11 +23,11 @@ RSpec.describe Zephira::Models do
 
   describe ".find_by_name" do
     it "finds a model by exact name" do
-      expect(described_class.find_by_name("o4-mini-2025-04-16")).to eq(Zephira::Models::GptO4Mini)
+      expect(described_class.find_by_name("o4-mini")).to eq(Zephira::Models::GptO4Mini)
     end
 
     it "finds a model case-insensitively" do
-      expect(described_class.find_by_name("O4-MINI-2025-04-16")).to eq(Zephira::Models::GptO4Mini)
+      expect(described_class.find_by_name("O4-MINI")).to eq(Zephira::Models::GptO4Mini)
     end
 
     it "returns nil for an unknown model name" do
@@ -35,8 +38,11 @@ RSpec.describe Zephira::Models do
   describe "model definitions" do
     {
       Zephira::Models::Claude35Sonnet => {name: "claude-3-5-sonnet-20241022", context_limit: 200_000},
-      Zephira::Models::ChatGpt41Mini => {name: "gpt-4.1-mini-2025-04-14", context_limit: 1_047_576},
-      Zephira::Models::GptO4Mini => {name: "o4-mini-2025-04-16", context_limit: 200_000},
+      Zephira::Models::ChatGpt41 => {name: "gpt-4.1", context_limit: 1_047_576},
+      Zephira::Models::ChatGpt41Mini => {name: "gpt-4.1-mini", context_limit: 1_047_576},
+      Zephira::Models::Gpt54 => {name: "gpt-5.4", context_limit: 1_047_576},
+      Zephira::Models::Gpt55 => {name: "gpt-5.5", context_limit: 1_047_576},
+      Zephira::Models::GptO4Mini => {name: "o4-mini", context_limit: 200_000},
       Zephira::Models::Llama4 => {name: "meta-llama/llama-4-maverick-17b-128e-instruct", context_limit: 131_072}
     }.each do |model, attrs|
       context model.name do
