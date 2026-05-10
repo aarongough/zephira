@@ -53,7 +53,7 @@ module Zephira
       end
 
       def self.inference(api_key:, agent:, messages: [], base_url: nil)
-        client = backend_class.new(api_key: api_key, agent: agent, base_url: base_url)
+        client = backend_class.new(api_key: api_key, base_url: base_url)
 
         loop do
           agent.thinking(self)
@@ -95,7 +95,7 @@ module Zephira
       end
 
       def self.simple_inference(api_key:, messages:, agent: nil, base_url: nil)
-        client = backend_class.new(api_key: api_key, agent: agent, base_url: base_url)
+        client = backend_class.new(api_key: api_key, base_url: base_url)
         agent.thinking(self) if agent.respond_to?(:thinking)
         client.chat(model_name: model_name, messages: messages, agent: agent)["content"]
       end

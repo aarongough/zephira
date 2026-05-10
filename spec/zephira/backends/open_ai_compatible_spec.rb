@@ -5,7 +5,7 @@ RSpec.describe Zephira::Backends::OpenAiCompatible do
   let(:base_url) { "https://api.openai.com/v1" }
   let(:logger) { instance_double(Zephira::Logger, info: nil, error: nil, debug: nil) }
   let(:agent) { double("Zephira::Agent", logger: logger) }
-  let(:backend) { described_class.new(api_key: api_key, agent: agent) }
+  let(:backend) { described_class.new(api_key: api_key) }
 
   let(:success_response) do
     {
@@ -73,7 +73,7 @@ RSpec.describe Zephira::Backends::OpenAiCompatible do
 
     it "uses a custom base_url when provided" do
       custom_url = "https://my-proxy.example.com/v1"
-      custom_backend = described_class.new(api_key: api_key, agent: agent, base_url: custom_url)
+      custom_backend = described_class.new(api_key: api_key, base_url: custom_url)
 
       stub_request(:post, "#{custom_url}/chat/completions")
         .to_return(status: 200, body: success_response, headers: {"Content-Type" => "application/json"})

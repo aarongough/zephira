@@ -14,9 +14,8 @@ module Zephira
 
       REQUEST_TIMEOUT = 300
 
-      def initialize(api_key:, agent:, base_url: nil)
+      def initialize(api_key:, base_url: nil)
         @api_key = api_key
-        @agent = agent
         @base_url = base_url || "https://api.openai.com/v1"
       end
 
@@ -27,7 +26,7 @@ module Zephira
           tools: tools
         }.merge(options).compact
 
-        debug_log(payload) if ENV["DEBUG"] == "true"
+        debug_log(payload, agent: agent) if Config.read("ZEPHIRA_DEBUG") == "true"
 
         client = Faraday.new(
           url: @base_url,
@@ -45,20 +44,20 @@ module Zephira
         response = client.post("chat/completions", JSON.generate(payload))
         raw = JSON.parse(response.body)
 
-        agent.logger.info "OpenAI API response: #{raw.inspect}"
+        agent&.logger&.info "OpenAI API response: #{raw.inspect}"
         raw.dig("choices", 0, "message") || {}
       rescue => exception
-        agent.logger.error "OpenAI API request failed: #{exception.class}: #{exception.message}"
+        agent&.logger&.error "OpenAI API request failed: #{exception.class}: #{exception.message}"
         if exception.respond_to?(:response) && exception.response
-          agent.logger.error "Response status: #{exception.response[:status]}"
-          agent.logger.error "Response body: #{exception.response[:body]}"
+          agent&.logger&.error "Response status: #{exception.response[:status]}"
+          agent&.logger&.error "Response body: #{exception.response[:body]}"
         end
         raise
       end
 
       private
 
-      def debug_log(parameters)
+      def debug_log(parameters, agent:)
         log_dir = File.join(Dir.pwd, ".zephira", "logs")
         FileUtils.mkdir_p(log_dir)
         timestamp = Time.now.utc.strftime("%Y%m%dT%H%M%S%L")
@@ -68,7 +67,7 @@ module Zephira
           base_url: @base_url,
           parameters: parameters
         }))
-        @agent.logger.debug "OpenAI request logged to: #{filepath}"
+        agent&.logger&.debug "OpenAI request logged to: #{filepath}"
       end
     end
   end
