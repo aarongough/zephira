@@ -103,5 +103,20 @@ RSpec.describe Zephira::Config do
         expect(described_class.read("ZEPHIRA_TEST_KEY")).to be_nil
       end
     end
+
+    context "when the project config file is empty" do
+      it "returns nil instead of raising NoMethodError" do
+        File.write(".zephira.yml", "")
+        expect(described_class.read("ZEPHIRA_TEST_KEY")).to be_nil
+      end
+    end
+
+    context "when the global config file is empty" do
+      it "returns nil instead of raising NoMethodError" do
+        FileUtils.mkdir_p(File.expand_path("~"))
+        File.write(File.expand_path("~/.zephira.yml"), "")
+        expect(described_class.read("ZEPHIRA_TEST_KEY")).to be_nil
+      end
+    end
   end
 end
