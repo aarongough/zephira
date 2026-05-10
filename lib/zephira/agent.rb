@@ -83,6 +83,9 @@ module Zephira
       @history = History.new
       @history.compact_tool_messages!
 
+      @uname = `uname -a`.strip
+      @pwd = `pwd`.strip
+
       @model = resolve_model
     end
 
@@ -131,39 +134,11 @@ module Zephira
 
     def run_loop
       Readline.completion_proc = proc { |input| @completions.complete_all(input: input, agent: self) }
-
-      if history.session_start > 0
-        history.messages[0...history.session_start]
-          .select { |message| message[:role] == "user" }
-          .map { |message| message[:content] }
-          .each { |command| Readline::HISTORY.push(command) }
-      end
-
-      logo_width = LOGO.each_line.first.chomp.length
-      logo_indent = [(screen_width - logo_width) / 2, 0].max
-      puts Formatter.format(Formatter.color(:green, LOGO), indent: logo_indent)
-
-      puts
-      puts "#{Formatter.color(:grey, "System:")}\n Zephira starting... #{Formatter.color(:green, "Ready!")}"
-      puts
-      puts Formatter.color(:grey, "Zephira:")
-      puts "  Hello! I am Zephira, your command line assistant. How can I help you today?"
-      puts "  Type your command or question below. If you're not sure what to ask, you can"
-      puts "  ask me what I can do for you... or type '/help' for a list of commands."
+      seed_readline_history
+      print_intro
 
       loop do
-        context_used = Tokens.estimate(JSON.dump(@history.messages))
-        context_limit = @model.context_limit
-        context_pct = ((context_limit - context_used).to_f / context_limit * 100).clamp(0, 100).to_i
-        width = screen_width
-        print TTY::Cursor.move_to(0, screen_height - 3)
-        puts Formatter.color(:grey, "-" * width)
-
-        sandbox_label = ENV["ZEPHIRA_IN_SANDBOX"] == "1" ? "sandboxed" : "⚠ DANGER: NO SANDBOX"
-        sandbox_color = ENV["ZEPHIRA_IN_SANDBOX"] == "1" ? :green : :red
-        right_text    = "ctrl+c to exit | '/help' + enter to see commands | #{context_pct}% context left"
-        padding       = [width - sandbox_label.length - right_text.length, 1].max
-        puts Formatter.color(sandbox_color, sandbox_label) + " " * padding + Formatter.color(:grey, right_text)
+        render_status_bar
 
         user_input = Readline.readline("> ", true)
         break if user_input.nil?
@@ -172,53 +147,16 @@ module Zephira
         next if input.empty?
 
         TTY::Cursor.hide
-
-        rows = screen_rows
-        puts
-        puts Formatter.color(:grey, "=" * screen_width)
-        puts "\n" * rows
-        print TTY::Cursor.up(rows)
-        puts Formatter.color(:grey, "User:")
-        puts Formatter.format(input, indent: 2)
-        puts
+        echo_user_input(input)
 
         if input.start_with?("/")
-          parts = input[1..].strip.split
-          run_command(name: parts.first, args: parts[1..] || [])
+          dispatch_command(input)
           TTY::Cursor.show
           next
         end
 
-        history.append(role: "user", content: input)
-        messages = [system_prompt] + history.messages.map { |message| message.slice(:role, :content, :tool_call_id, :tool_calls) }
-
-        response = nil
-        spinner_format_string = Formatter.color(:grey, "[") + Formatter.color(:green, " :spinner ") + Formatter.color(:grey, ":elapsed] ")
-        @spinner = TTY::Spinner.new(spinner_format_string, format: :dots)
-        spinner_started_at = Time.now
-        @spinner.on(:spin) do
-          elapsed = (Time.now - spinner_started_at).to_i
-          @spinner.instance_variable_get(:@tokens)[:elapsed] = sprintf("%03ds", elapsed)
-        end
-
-        @spinner.run(Formatter.color(:green, "Done!")) do
-          response = @model.inference(
-            api_key: Config.read("ZEPHIRA_API_KEY"),
-            base_url: Config.read("ZEPHIRA_BASE_URL"),
-            messages: messages,
-            agent: self
-          )
-        end
-        @spinner = nil
-
+        process_user_message(input)
         TTY::Cursor.show
-
-        if response
-          history.append(role: "assistant", content: response)
-          puts Formatter.color(:grey, "\nZephira:")
-          puts Formatter.format(response, indent: 2)
-          puts
-        end
 
         history.compact_tool_messages!
         compact_if_needed
@@ -229,6 +167,95 @@ module Zephira
         puts "\nError: #{e.message}"
         logger.error("#{e.class}: #{e.message}\n#{e.backtrace.first(5).join("\n")}")
       end
+    end
+
+    def seed_readline_history
+      return unless history.session_start > 0
+      history.messages[0...history.session_start]
+        .select { |message| message[:role] == "user" }
+        .map { |message| message[:content] }
+        .each { |command| Readline::HISTORY.push(command) }
+    end
+
+    def print_intro
+      logo_width = LOGO.each_line.first.chomp.length
+      logo_indent = [(screen_width - logo_width) / 2, 0].max
+      puts Formatter.format(Formatter.color(:green, LOGO), indent: logo_indent)
+      puts
+      puts "#{Formatter.color(:grey, "System:")}\n Zephira starting... #{Formatter.color(:green, "Ready!")}"
+      puts
+      puts Formatter.color(:grey, "Zephira:")
+      puts "  Hello! I am Zephira, your command line assistant. How can I help you today?"
+      puts "  Type your command or question below. If you're not sure what to ask, you can"
+      puts "  ask me what I can do for you... or type '/help' for a list of commands."
+    end
+
+    def render_status_bar
+      context_used = Tokens.estimate(JSON.dump(@history.messages))
+      context_limit = @model.context_limit
+      # Percent of context window REMAINING (limit - used) / limit, clamped to 0..100.
+      context_pct = ((context_limit - context_used).to_f / context_limit * 100).clamp(0, 100).to_i
+      width = screen_width
+      print TTY::Cursor.move_to(0, screen_height - 3)
+      puts Formatter.color(:grey, "-" * width)
+
+      sandbox_label = ENV["ZEPHIRA_IN_SANDBOX"] == "1" ? "sandboxed" : "⚠ DANGER: NO SANDBOX"
+      sandbox_color = ENV["ZEPHIRA_IN_SANDBOX"] == "1" ? :green : :red
+      right_text = "ctrl+c to exit | '/help' + enter to see commands | #{context_pct}% context left"
+      padding = [width - sandbox_label.length - right_text.length, 1].max
+      puts Formatter.color(sandbox_color, sandbox_label) + " " * padding + Formatter.color(:grey, right_text)
+    end
+
+    def echo_user_input(input)
+      rows = screen_rows
+      puts
+      puts Formatter.color(:grey, "=" * screen_width)
+      puts "\n" * rows
+      print TTY::Cursor.up(rows)
+      puts Formatter.color(:grey, "User:")
+      puts Formatter.format(input, indent: 2)
+      puts
+    end
+
+    def dispatch_command(input)
+      parts = input[1..].strip.split
+      run_command(name: parts.first, args: parts[1..] || [])
+    end
+
+    def process_user_message(input)
+      history.append(role: "user", content: input)
+      messages = [system_prompt] + history.messages.map { |message| message.slice(:role, :content, :tool_call_id, :tool_calls) }
+
+      response = run_inference_with_spinner(messages)
+
+      if response
+        history.append(role: "assistant", content: response)
+        puts Formatter.color(:grey, "\nZephira:")
+        puts Formatter.format(response, indent: 2)
+        puts
+      end
+    end
+
+    def run_inference_with_spinner(messages)
+      response = nil
+      spinner_format_string = Formatter.color(:grey, "[") + Formatter.color(:green, " :spinner ") + Formatter.color(:grey, ":elapsed] ")
+      @spinner = TTY::Spinner.new(spinner_format_string, format: :dots)
+      spinner_started_at = Time.now
+      @spinner.on(:spin) do
+        elapsed = (Time.now - spinner_started_at).to_i
+        @spinner.update(elapsed: sprintf("%03ds", elapsed))
+      end
+
+      @spinner.run(Formatter.color(:green, "Done!")) do
+        response = @model.inference(
+          api_key: Config.read("ZEPHIRA_API_KEY"),
+          base_url: Config.read("ZEPHIRA_BASE_URL"),
+          messages: messages,
+          agent: self
+        )
+      end
+      @spinner = nil
+      response
     end
 
     private
@@ -250,8 +277,8 @@ module Zephira
           .gsub("@@@GLOBAL_ADDITIONAL_INSTRUCTIONS@@@", instructions[:global] || "[NONE FOUND]")
           .gsub("@@@PROJECT_ADDITIONAL_INSTRUCTIONS@@@", instructions[:project] || "[NONE FOUND]")
           .gsub("@@@DATE@@@", `date`.strip)
-          .gsub("@@@UNAME@@@", `uname -a`.strip)
-          .gsub("@@@PWD@@@", `pwd`.strip)
+          .gsub("@@@UNAME@@@", @uname)
+          .gsub("@@@PWD@@@", @pwd)
           .gsub("@@@LSR@@@", `ls -R`.strip)
       }
     end
