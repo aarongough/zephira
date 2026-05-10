@@ -12,22 +12,13 @@ module Zephira
           require File.expand_path(file)
         end
       end
-      new(paths)
-    end
-
-    def initialize(paths)
-      @paths = paths
+      new
     end
 
     def constants
-      @constants ||= ::Zephira::Tools.constants(false).map do |const_sym|
-        ::Zephira::Tools.const_get(const_sym)
-      end - [
-        ::Zephira::Tools::BaseTool,
-        ::Zephira::Tools::ToolNotFoundError,
-        ::Zephira::Tools::ToolExecutionError,
-        ::Zephira::Tools::ToolResultError
-      ]
+      @constants ||= ::Zephira::Tools.constants(false)
+        .map { |const_sym| ::Zephira::Tools.const_get(const_sym) }
+        .select { |const| const.is_a?(Class) && const < ::Zephira::Tools::BaseTool }
     end
 
     def to_h
