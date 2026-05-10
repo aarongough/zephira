@@ -8,6 +8,9 @@ require "tty-cursor"
 
 module Zephira
   class Agent
+    COMPACTION_TRIGGER_RATIO = 0.8
+    COMPACTION_TARGET_RATIO = 0.5
+
     SYSTEM_PROMPT = <<~PROMPT
       You are a helpful command line agent called Zephira.
       You can run commands and tools to assist the user.
@@ -121,6 +124,30 @@ module Zephira
       @commands.run(name: name, args: args, agent: self)
     end
 
+    def compact_history(force: false)
+      current = rough_token_count(JSON.dump(@history.messages))
+      threshold = (@model.context_limit * COMPACTION_TRIGGER_RATIO).to_i
+      target = force ? [current / 2, 1].max : (@model.context_limit * COMPACTION_TARGET_RATIO).to_i
+
+      return false if @history.messages.empty?
+      return false if !force && current <= threshold
+
+      puts Formatter.color(:grey, "  ✦ Compacting history (~#{current} tokens)...")
+      @history.compact(
+        response_model: @model,
+        api_key: Config.read("ZEPHIRA_API_KEY"),
+        agent: self,
+        token_limit: target
+      )
+      after = rough_token_count(JSON.dump(@history.messages))
+      puts Formatter.color(:grey, "  ✦ History compacted (~#{after} tokens).")
+      true
+    end
+
+    def compact_if_needed
+      compact_history(force: false)
+    end
+
     def run_loop
       Readline.completion_proc = proc { |input| @completions.complete_all(input: input, agent: self) }
 
@@ -132,11 +159,6 @@ module Zephira
       end
 
       logo_width = LOGO.each_line.first.chomp.length
-      screen_width = begin
-        TTY::Screen.width
-      rescue
-        80
-      end
       logo_indent = [(screen_width - logo_width) / 2, 0].max
       puts Formatter.format(Formatter.color(:green, LOGO), indent: logo_indent)
 
@@ -152,17 +174,8 @@ module Zephira
         context_used = rough_token_count(JSON.dump(@history.messages))
         context_limit = @model.context_limit
         context_pct = ((context_limit - context_used).to_f / context_limit * 100).clamp(0, 100).to_i
-        width = begin
-          TTY::Screen.width
-        rescue
-          80
-        end
-        height = begin
-          TTY::Screen.height
-        rescue
-          24
-        end
-        print TTY::Cursor.move_to(0, height - 3)
+        width = screen_width
+        print TTY::Cursor.move_to(0, screen_height - 3)
         puts Formatter.color(:grey, "-" * width)
 
         sandbox_label = ENV["ZEPHIRA_IN_SANDBOX"] == "1" ? "sandboxed" : "⚠ DANGER: NO SANDBOX"
@@ -179,18 +192,9 @@ module Zephira
 
         TTY::Cursor.hide
 
-        width = begin
-          TTY::Screen.width
-        rescue
-          80
-        end
-        rows = begin
-          TTY::Screen.rows
-        rescue
-          24
-        end
+        rows = screen_rows
         puts
-        puts Formatter.color(:grey, "=" * width)
+        puts Formatter.color(:grey, "=" * screen_width)
         puts "\n" * rows
         print TTY::Cursor.up(rows)
         puts Formatter.color(:grey, "User:")
@@ -205,7 +209,7 @@ module Zephira
         end
 
         history.append(role: "user", content: input)
-        messages = [system_prompt] + history.messages.map { |m| m.slice(:role, :content, :tool_call_id, :tool_calls) }
+        messages = [system_prompt] + history.messages.map { |message| message.slice(:role, :content, :tool_call_id, :tool_calls) }
 
         response = nil
         spinner_format_string = Formatter.color(:grey, "[") + Formatter.color(:green, " :spinner ") + Formatter.color(:grey, ":elapsed] ")
@@ -236,6 +240,7 @@ module Zephira
         end
 
         history.compact_tool_messages!
+        compact_if_needed
       rescue Interrupt
         puts "\n[Interrupted]"
         break
@@ -277,10 +282,25 @@ module Zephira
 
     def resolve_model
       name = Config.read("ZEPHIRA_MODEL") || "gpt-4.1-mini"
-      candidates = Models.constants(false)
-        .map { |c| Models.const_get(c) }
-        .reject { |cls| cls == Models::BaseModel }
-      candidates.find { |m| m.model_name.downcase == name.downcase } || Models::ChatGpt41Mini
+      Models.find_by_name(name) || Models::ChatGpt41Mini
+    end
+
+    def screen_width
+      TTY::Screen.width
+    rescue
+      80
+    end
+
+    def screen_height
+      TTY::Screen.height
+    rescue
+      24
+    end
+
+    def screen_rows
+      TTY::Screen.rows
+    rescue
+      24
     end
   end
 end
