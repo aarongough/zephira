@@ -63,21 +63,6 @@ module Zephira
       ░▒▓████████▓▒░░▒▓████████▓▒░░▒▓█▓▒░       ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░
     LOGO
 
-    class Status
-      def initialize(agent)
-        @agent = agent
-      end
-
-      def verbose(msg)
-        return unless @agent.verbose?
-        @agent.update_status(msg)
-      end
-
-      def warn(msg)
-        @agent.update_status(Formatter.color(:dark_red, msg))
-      end
-    end
-
     attr_reader :history, :tools, :commands, :completions, :logger, :status
     attr_accessor :model, :verbose
 
@@ -110,10 +95,6 @@ module Zephira
     def update_status(msg)
       @spinner&.spin
       puts msg
-    end
-
-    def verbose?
-      @verbose
     end
 
     def run_tool(name:, args:)

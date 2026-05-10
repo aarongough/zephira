@@ -17,6 +17,7 @@ Dir[File.join(__dir__, "zephira/commands/*.rb")].each { |file| require file }
 require_relative "zephira/completions"
 Dir[File.join(__dir__, "zephira/completions/*.rb")].each { |file| require file }
 require_relative "zephira/agent"
+require_relative "zephira/agent/status"
 require_relative "zephira/cli"
 
 module Zephira

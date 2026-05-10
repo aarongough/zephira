@@ -59,14 +59,14 @@ RSpec.describe Zephira::Agent do
     end
   end
 
-  describe "#verbose?" do
+  describe "#verbose" do
     it "returns false by default" do
-      expect(agent.verbose?).to be false
+      expect(agent.verbose).to be false
     end
 
     it "returns true when verbose is set" do
       agent.verbose = true
-      expect(agent.verbose?).to be true
+      expect(agent.verbose).to be true
     end
   end
 

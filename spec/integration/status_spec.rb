@@ -34,5 +34,36 @@ RSpec.describe "Agent::Status", :integration do
       agent.verbose = true
       expect { agent.status.verbose("detail") }.to output(/detail/).to_stdout
     end
+
+    it "delegates printing to the agent's update_status" do
+      agent.verbose = true
+      allow(agent).to receive(:update_status)
+      agent.status.verbose("hello")
+      expect(agent).to have_received(:update_status).with("hello")
+    end
+
+    it "skips update_status entirely when verbose is false" do
+      agent.verbose = false
+      allow(agent).to receive(:update_status)
+      agent.status.verbose("nope")
+      expect(agent).not_to have_received(:update_status)
+    end
+  end
+
+  describe "interaction with the spinner during run_loop" do
+    it "still prints warn output even when called rapidly" do
+      messages = ["one", "two", "three"]
+      output = messages.map { |msg| capture_stdout { agent.status.warn(msg) } }.join
+      messages.each { |msg| expect(output).to include(msg) }
+    end
+
+    def capture_stdout
+      original = $stdout
+      $stdout = StringIO.new
+      yield
+      $stdout.string
+    ensure
+      $stdout = original
+    end
   end
 end
