@@ -99,7 +99,11 @@ module Zephira
         agent.status.verbose(" • Response: #{response.code}")
         agent.logger.info("#{http_method} #{url} -> #{response.code}")
 
-        success_result(status: response.code.to_i, headers: response.each_header.to_h, body: response.body)
+        charset = response.type_params["charset"] || "UTF-8"
+        body = response.body.to_s.dup.force_encoding(charset)
+        body = body.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
+
+        success_result(status: response.code.to_i, headers: response.each_header.to_h, body: body)
       rescue => e
         error_result(message: e.message)
       end
