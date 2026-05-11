@@ -1,6 +1,11 @@
 # Zephira Changelog
 
-## [Unreleased]
+## [0.1.1]
+
+### Fixed
+- Published gem no longer includes `Gemfile` / `Gemfile.lock`, which previously caused Bundler to crash when invoking `zephira` from a CWD that resolved to the installed gem's directory tree.
+
+## [0.1.0]
 
 ### Added
 - Concurrent execution of read-only tool calls within a single model turn (`web_search`, `read_file`, `code_search`, `list_directory`, `memory_read`, `memory_list`). Mutating tools still run sequentially in declared order.
