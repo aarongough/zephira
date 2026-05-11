@@ -1,5 +1,10 @@
 # Zephira Changelog
 
+## [0.1.3]
+
+### Changed
+- Added OCI image labels (`org.opencontainers.image.source`, `description`, `licenses`) to the published Docker image so the GHCR package page links back to the repository and surfaces the README.
+
 ## [0.1.2]
 
 ### Fixed

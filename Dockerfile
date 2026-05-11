@@ -23,6 +23,10 @@ RUN gem build zephira.gemspec
 
 FROM ruby:3.4-slim AS runtime
 
+LABEL org.opencontainers.image.source="https://github.com/aarongough/zephira"
+LABEL org.opencontainers.image.description="Command-line AI coding assistant in Ruby."
+LABEL org.opencontainers.image.licenses="MIT"
+
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends \
       libreadline-dev \
