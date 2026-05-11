@@ -1,8 +1,28 @@
 # Zephira
 
-Zephira is a command-line AI coding assistant written in Ruby.
+A command-line AI coding assistant written in Ruby. Runs in your terminal, keeps per-project conversation history, and executes safely contained inside a Docker sandbox by default.
 
-It runs in your terminal, keeps per-project conversation history, calls a pluggable set of tools, and executes inside a Docker sandbox by default so the agent cannot touch the host system unless you opt out. The codebase is small, plugin-based, and intended to be read end-to-end.
+## Quickstart
+
+1. Install Docker — required for the sandbox. See [docs.docker.com/get-docker](https://docs.docker.com/get-docker/).
+
+2. Add your OpenAI API key to `~/.zephira.yml`:
+
+   ```yaml
+   ZEPHIRA_API_KEY: "sk-..."
+   ```
+
+3. Install the gem:
+
+   ```sh
+   gem install zephira
+   ```
+
+4. Run it from any project directory:
+
+   ```sh
+   zephira
+   ```
 
 ## Features
 
@@ -20,21 +40,16 @@ It runs in your terminal, keeps per-project conversation history, calls a plugga
 - Persistent session log + conversation history under `.zephira/` in each project
 - ~95% line coverage on a focused RSpec suite
 
-## Installation
-
-Requirements:
-
-- Ruby 3.2+
-- Bundler
-- Docker, if you want sandboxed execution
-
-Install from RubyGems:
+## CLI
 
 ```sh
-gem install zephira
+zephira              # start in the current directory
+zephira --help       # CLI help
+zephira --version    # installed version
+zephira --dangerously-skip-sandbox  # run without Docker isolation (your filesystem is exposed)
 ```
 
-Or install locally for development:
+## Local development install
 
 ```sh
 git clone https://github.com/aarongough/zephira.git
@@ -42,33 +57,7 @@ cd zephira
 bundle install
 ```
 
-## Quick start
-
-Start Zephira in the current project directory:
-
-```sh
-zephira
-```
-
-Show CLI help:
-
-```sh
-zephira --help
-```
-
-Print the installed version:
-
-```sh
-zephira --version
-```
-
-To run without Docker sandboxing:
-
-```sh
-zephira --dangerously-skip-sandbox
-```
-
-Warning: skipping the sandbox gives the agent direct access to your real filesystem.
+Requirements: Ruby 3.2+, Bundler, Docker (for sandboxed execution).
 
 ## Configuration
 
