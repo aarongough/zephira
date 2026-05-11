@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe Zephira::Config do
+RSpec.describe Zephira::Config, :real_config do
   include FakeFS::SpecHelpers
 
   describe ".read" do

@@ -67,6 +67,30 @@ RSpec.describe Zephira::Tools::ReadFile do
       end
     end
 
+    context "when file is unreadable due to permissions" do
+      before do
+        File.write("locked.txt", "secret")
+        allow(File).to receive(:size).and_call_original
+        allow(File).to receive(:size).with(File.expand_path("locked.txt")).and_raise(Errno::EACCES)
+      end
+
+      it "includes error entry and warns" do
+        result = described_class.run(args: {"file_paths" => ["locked.txt"], "intent" => described_class.name}, agent: agent)
+        expect(result).to be_success
+        expect(result[:data].first["error"]).to match(/Permission denied: locked\.txt/)
+        expect(status).to have_received(:warn).with(" • Permission denied: 'locked.txt'")
+      end
+    end
+
+    context "when file_path entry is blank" do
+      it "produces a per-entry error and warns" do
+        result = described_class.run(args: {"file_paths" => ["  "], "intent" => described_class.name}, agent: agent)
+        expect(result).to be_success
+        expect(result[:data].first["error"]).to match(/empty or missing/)
+        expect(status).to have_received(:warn).with(/empty or missing/)
+      end
+    end
+
     context "when file exceeds size limit" do
       let(:big_content) { "x" * (Zephira::Tools::ReadFile::DEFAULT_MAX_BYTES + 1) }
 

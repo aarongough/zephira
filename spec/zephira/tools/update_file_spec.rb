@@ -62,5 +62,17 @@ RSpec.describe Zephira::Tools::UpdateFile do
         expect(result[:error]).to match(/`file_path` must be of type String/)
       end
     end
+
+    context "when the target is unwritable" do
+      before do
+        allow(File).to receive(:write).and_raise(Errno::EACCES.new(file_path))
+      end
+
+      it "surfaces the error" do
+        result = described_class.run(args: args, agent: agent)
+        expect(result[:outcome]).to eq("error")
+        expect(result[:error]).to match(/Permission denied/)
+      end
+    end
   end
 end
