@@ -83,11 +83,7 @@ Environment variables take precedence.
 Example configuration:
 
 ```yaml
-ZEPHIRA_API_KEY: "your_api_key_here"
-ZEPHIRA_MODEL: "gpt-4.1-mini"
-ZEPHIRA_BASE_URL: "https://api.openai.com/v1"
-ZEPHIRA_BACKEND: "openai_compatible"
-ZEPHIRA_BASE_IMAGE: "ruby:3.4-slim"
+ZEPHIRA_API_KEY: "openai_API_KEY_HERE"
 ZEPHIRA_BRAVE_SEARCH_API_KEY: "your_brave_api_key_here"
 ```
 
