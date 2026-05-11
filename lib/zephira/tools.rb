@@ -32,8 +32,7 @@ module Zephira
     end
 
     def run(name:, args:, agent:)
-      tool = constants.find { |candidate| candidate.name == name }
-      raise ToolNotFoundError, "Tool not found: #{name}" if tool.nil?
+      tool = find!(name)
 
       result = begin
         tool.run(args: args, agent: agent)
@@ -43,6 +42,17 @@ module Zephira
 
       validate_result(result)
       result
+    end
+
+    def read_only?(name)
+      tool = constants.find { |candidate| candidate.name == name }
+      tool && tool.respond_to?(:read_only?) && tool.read_only?
+    end
+
+    def find!(name)
+      tool = constants.find { |candidate| candidate.name == name }
+      raise ToolNotFoundError, "Tool not found: #{name}" if tool.nil?
+      tool
     end
 
     private

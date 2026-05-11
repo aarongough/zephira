@@ -12,6 +12,10 @@ module Zephira
           "List all stored memory keys."
         end
 
+        def read_only?
+          true
+        end
+
         def parameters
           {
             type: "object",

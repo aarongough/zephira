@@ -12,6 +12,10 @@ module Zephira
           "List the contents of a directory."
         end
 
+        def read_only?
+          true
+        end
+
         def parameters
           {
             type: "object",

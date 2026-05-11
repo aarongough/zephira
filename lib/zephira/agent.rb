@@ -72,6 +72,7 @@ module Zephira
       @logger = Logger.new(file_path: log_file_path)
       @status = Status.new(self)
       @spinner = nil
+      @output_mutex = Mutex.new
 
       tool_dirs = [File.expand_path("tools", __dir__)]
       command_dirs = [File.expand_path("commands", __dir__)]
@@ -96,8 +97,10 @@ module Zephira
     end
 
     def update_status(msg)
-      @spinner&.spin
-      puts msg
+      @output_mutex.synchronize do
+        @spinner&.spin
+        puts msg
+      end
     end
 
     def run_tool(name:, args:)

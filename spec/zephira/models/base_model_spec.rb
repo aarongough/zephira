@@ -3,7 +3,7 @@ require "spec_helper"
 RSpec.describe Zephira::Models::BaseModel do
   let(:logger) { instance_double(Zephira::Logger, info: nil, error: nil, debug: nil) }
   let(:history) { double("History", append: nil) }
-  let(:tools) { double("Tools", to_h: []) }
+  let(:tools) { double("Tools", to_h: [], read_only?: false) }
   let(:agent) do
     double("Agent",
       logger: logger,
@@ -48,7 +48,7 @@ RSpec.describe Zephira::Models::BaseModel do
     let(:tool) do
       {name: "shell", description: "Run a shell command", parameters: {type: "object", properties: {}}}
     end
-    let(:tools) { double("Tools", to_h: [tool]) }
+    let(:tools) { double("Tools", to_h: [tool], read_only?: false) }
 
     it "formats a tool into a function definition" do
       result = described_class.format_tools(tools)
@@ -119,6 +119,50 @@ RSpec.describe Zephira::Models::BaseModel do
         expect(result).to eq("Done!")
         expect(agent).to have_received(:run_tool).with(name: "shell", args: {command: "ls", intent: "list"})
       end
+    end
+  end
+
+  describe ".dispatch_tool_calls" do
+    let(:read_only_call) do
+      {"id" => "ro1", "function" => {"name" => "read_file", "arguments" => '{"file_paths":["a"]}'}}
+    end
+    let(:mutating_call) do
+      {"id" => "m1", "function" => {"name" => "shell", "arguments" => '{"command":"ls"}'}}
+    end
+
+    before do
+      allow(tools).to receive(:read_only?) { |name| name == "read_file" }
+    end
+
+    it "preserves the original ordering of tool calls in returned results" do
+      allow(agent).to receive(:run_tool).and_return({outcome: "success", error: nil, data: "ok"})
+      results = described_class.dispatch_tool_calls([mutating_call, read_only_call], agent: agent)
+      expect(results.map { |call, _| call["id"] }).to eq(["m1", "ro1"])
+    end
+
+    it "runs read-only tools concurrently" do
+      received_threads = []
+      mutex = Mutex.new
+      allow(agent).to receive(:run_tool) do
+        mutex.synchronize { received_threads << Thread.current }
+        {outcome: "success", error: nil, data: "ok"}
+      end
+
+      ro_a = read_only_call.merge("id" => "a")
+      ro_b = read_only_call.merge("id" => "b")
+      described_class.dispatch_tool_calls([ro_a, ro_b], agent: agent)
+
+      expect(received_threads.uniq.size).to be > 1
+    end
+
+    it "runs mutating tools on the calling thread (sequentially)" do
+      seen_threads = []
+      allow(agent).to receive(:run_tool) do
+        seen_threads << Thread.current
+        {outcome: "success", error: nil, data: "ok"}
+      end
+      described_class.dispatch_tool_calls([mutating_call, mutating_call.merge("id" => "m2")], agent: agent)
+      expect(seen_threads).to all(eq(Thread.current))
     end
   end
 end

@@ -12,6 +12,10 @@ module Zephira
           "Read a named value from persistent memory."
         end
 
+        def read_only?
+          true
+        end
+
         def parameters
           {
             type: "object",

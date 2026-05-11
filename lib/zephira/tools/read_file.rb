@@ -14,6 +14,10 @@ module Zephira
           "Read the contents of one or more files (up to a size threshold)."
         end
 
+        def read_only?
+          true
+        end
+
         def parameters
           {
             type: "object",

@@ -54,7 +54,7 @@ module Zephira
             tool_instance = new(args: args, agent: agent)
             intent_value = tool_instance.arg(:intent)
             tool_instance.validate(intent_value, arg_path: "args[:intent]", type: String)
-            agent.update_status(Formatter.color(:green, "→ ") + intent_value)
+            agent.update_status(Formatter.color(:green, "→ ") + intent_value) if announces_intent?
             tool_instance.run
           rescue => exception
             log_message = "Tool call `#{name}` with args `#{args.inspect}` returned error: #{exception.message}"
@@ -97,6 +97,19 @@ module Zephira
           raise NotImplementedError, "This method should be overridden in a subclass"
         end
 
+        # Override and return true in read-only tools so the agent can run them
+        # concurrently. Anything that mutates filesystem, network state, memory
+        # store, or agent state must remain false (the default).
+        def read_only?
+          false
+        end
+
+        # Override to false in tools that emit their own per-item status lines
+        # (e.g. one line per query). Suppresses the auto-printed `→ intent`
+        # line that BaseTool.run emits before #run.
+        def announces_intent?
+          true
+        end
       end
     end
   end

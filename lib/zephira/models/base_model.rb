@@ -74,24 +74,45 @@ module Zephira
           messages << {role: "assistant", content: response["content"], tool_calls: response["tool_calls"]}
           agent.history.append(role: "assistant", content: response["content"], tool_calls: response["tool_calls"])
 
-          tool_calls.each do |call|
-            args = parse_tool_arguments(call, agent: agent)
-            result = agent.run_tool(name: call["function"]["name"], args: args)
-
-            content = if result.is_a?(Hash) && result.key?(:outcome)
-              if result[:outcome] == "success"
-                result[:data].is_a?(String) ? result[:data] : JSON.pretty_generate([result[:data]])
-              else
-                result[:error].to_s
-              end
-            else
-              result
-            end
-
+          dispatch_tool_calls(tool_calls, agent: agent).each do |call, content|
             messages << {role: "tool", tool_call_id: call["id"], content: content}
             agent.history.append(role: "tool", tool_call_id: call["id"], content: content)
           end
         end
+      end
+
+      # Returns an array of [call, content] pairs in the original order. Read-only
+      # tools are run concurrently via threads (network/disk I/O releases the GVL);
+      # mutating tools run sequentially after, in original order.
+      def self.dispatch_tool_calls(tool_calls, agent:)
+        results = Array.new(tool_calls.size)
+
+        read_only_calls = []
+        mutating_calls = []
+        tool_calls.each_with_index do |call, index|
+          if agent.tools.read_only?(call["function"]["name"])
+            read_only_calls << [index, call]
+          else
+            mutating_calls << [index, call]
+          end
+        end
+
+        threads = read_only_calls.map do |index, call|
+          Thread.new do
+            args = parse_tool_arguments(call, agent: agent)
+            result = agent.run_tool(name: call["function"]["name"], args: args)
+            results[index] = [call, serialize_tool_result(result)]
+          end
+        end
+        threads.each(&:join)
+
+        mutating_calls.each do |index, call|
+          args = parse_tool_arguments(call, agent: agent)
+          result = agent.run_tool(name: call["function"]["name"], args: args)
+          results[index] = [call, serialize_tool_result(result)]
+        end
+
+        results
       end
 
       def self.simple_inference(api_key:, messages:, agent: nil, base_url: nil)
@@ -106,6 +127,16 @@ module Zephira
       rescue JSON::ParserError => exception
         agent&.logger&.error("Failed to parse tool arguments for #{call["function"]["name"]}: #{exception.message}. Raw: #{raw.inspect}")
         {}
+      end
+
+      def self.serialize_tool_result(result)
+        return result unless result.is_a?(Hash) && result.key?(:outcome)
+
+        if result[:outcome] == "success"
+          result[:data].is_a?(String) ? result[:data] : JSON.pretty_generate([result[:data]])
+        else
+          result[:error].to_s
+        end
       end
     end
   end

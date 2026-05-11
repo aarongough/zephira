@@ -15,6 +15,10 @@ module Zephira
           "Search codebase for symbols or patterns"
         end
 
+        def read_only?
+          true
+        end
+
         def parameters
           {
             type: "object",

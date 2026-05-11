@@ -16,6 +16,10 @@ module Zephira
           "Performs a web search using the Brave Search API."
         end
 
+        def read_only?
+          true
+        end
+
         def parameters
           {
             type: "object",
@@ -86,7 +90,7 @@ module Zephira
           return error_result(message: "`num_results` must be an integer between 1 and 50")
         end
 
-        agent.status.verbose(" • Searching: '#{query}'")
+        agent.update_status("    Web search: '#{query}'")
 
         uri = URI("https://api.search.brave.com/res/v1/web/search")
         params = {"q" => query}

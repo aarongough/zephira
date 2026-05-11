@@ -93,4 +93,31 @@ RSpec.describe Zephira::Tools do
       end
     end
   end
+
+  describe "#read_only?" do
+    it "returns false for the default StubTool" do
+      expect(tools.read_only?("stub_tool")).to be false
+    end
+
+    it "returns false for unknown tools" do
+      expect(tools.read_only?("nope")).to be(false).or be_nil
+    end
+
+    it "returns true when the tool overrides read_only?" do
+      stub_const("Zephira::Tools::ReadOnlyStub", Class.new(Zephira::Tools::BaseTool) do
+        class << self
+          def name = "read_only_stub"
+          def description = "A read-only stub"
+          def parameters = {type: "object", properties: {}}
+          def read_only? = true
+        end
+
+        def run
+          success_result("ok")
+        end
+      end)
+      tools = described_class.new
+      expect(tools.read_only?("read_only_stub")).to be true
+    end
+  end
 end
