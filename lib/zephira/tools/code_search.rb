@@ -127,7 +127,7 @@ module Zephira
       end
 
       def executable_available?(cmd)
-        _, _, status = Open3.capture3("which", cmd)
+        _, _, status = Open3.capture3("command", "-v", cmd)
         status.success?
       end
     end

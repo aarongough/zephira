@@ -56,12 +56,7 @@ module Zephira
       end
 
       def run
-        queries = arg(:queries)
-        begin
-          validate(queries, arg_path: "queries", type: Array, allow_empty: false)
-        rescue ToolUseError => error
-          return error_result(message: error.message)
-        end
+        queries = validate(arg(:queries), arg_path: "queries", type: Array, allow_empty: false)
 
         api_key = Config.read("ZEPHIRA_BRAVE_SEARCH_API_KEY").to_s
         if api_key.strip.empty?
@@ -70,10 +65,6 @@ module Zephira
 
         results = queries.map { |query| run_query(query, api_key) }
         success_result(results)
-      rescue => error
-        agent.logger.error("Web search failed: #{error.message}")
-        agent.status.warn("ERROR: Web search failed: #{error.message}")
-        error_result(message: "Web search failed: #{error.message}")
       end
 
       private

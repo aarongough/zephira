@@ -2,12 +2,16 @@
 
 require "spec_helper"
 
-RSpec.describe Zephira::Tools::WebSearch do
+BRAVE_URL = "https://api.search.brave.com/res/v1/web/search"
+
+RSpec.describe Zephira::Tools::WebSearch, :real_config do
   let(:logger) { double("logger", info: nil, warn: nil, error: nil) }
   let(:status) { double("status", verbose: nil, warn: nil) }
   let(:agent) { double("agent", logger: logger, status: status, update_status: nil) }
 
-  BRAVE_URL = "https://api.search.brave.com/res/v1/web/search"
+  def be_search_announcement(query)
+    a_string_matching(/Web search:.*'#{Regexp.escape(query)}'/)
+  end
 
   around do |example|
     original = ENV["ZEPHIRA_BRAVE_SEARCH_API_KEY"]
@@ -82,9 +86,9 @@ RSpec.describe Zephira::Tools::WebSearch do
         expect(result[:data].first[:outcome]).to eq("success")
       end
 
-      it "emits verbose status and logs" do
+      it "announces the per-query search and logs completion" do
         run("queries" => [{"query" => "ruby", "num_results" => 5}])
-        expect(status).to have_received(:verbose).with(" • Searching: 'ruby'")
+        expect(agent).to have_received(:update_status).with(be_search_announcement("ruby"))
         expect(status).to have_received(:verbose).with(" • Search complete: 'ruby'")
         expect(logger).to have_received(:info).with("Search complete: 'ruby'")
       end

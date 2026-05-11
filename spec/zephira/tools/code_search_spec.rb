@@ -64,7 +64,7 @@ RSpec.describe Zephira::Tools::CodeSearch do
     context "when rg is not available" do
       before do
         allow(Dir).to receive(:exist?).and_return(true)
-        allow(Open3).to receive(:capture3).with("which", "rg").and_return(["", "", double(success?: false)])
+        allow(Open3).to receive(:capture3).with("command", "-v", "rg").and_return(["", "", double(success?: false)])
       end
 
       it "returns per-query error for missing rg" do
@@ -88,7 +88,7 @@ RSpec.describe Zephira::Tools::CodeSearch do
 
       before do
         allow(Dir).to receive(:exist?).and_return(true)
-        allow(Open3).to receive(:capture3).with("which", "rg").and_return(["rg", "", double(success?: true)])
+        allow(Open3).to receive(:capture3).with("command", "-v", "rg").and_return(["rg", "", double(success?: true)])
         allow(Open3).to receive(:capture3).with("rg", "--json", "-C", "2", "-n", "-i", "foo", "/some/path")
           .and_return([rg_json, "", double(success?: true)])
       end
@@ -117,7 +117,7 @@ RSpec.describe Zephira::Tools::CodeSearch do
     context "when case_sensitive is true" do
       before do
         allow(Dir).to receive(:exist?).and_return(true)
-        allow(Open3).to receive(:capture3).with("which", "rg").and_return(["rg", "", double(success?: true)])
+        allow(Open3).to receive(:capture3).with("command", "-v", "rg").and_return(["rg", "", double(success?: true)])
         allow(Open3).to receive(:capture3).with("rg", "--json", "-C", "2", "-n", "Foo", "/some/path")
           .and_return(["", "", double(success?: true)])
       end

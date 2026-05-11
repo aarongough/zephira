@@ -20,19 +20,6 @@ RSpec.describe Zephira::Tools::BaseTool do
     end)
   end
 
-  describe ".as_json" do
-    it "returns the function JSON definition" do
-      expect(tool_class.as_json).to eq({
-        type: "function",
-        function: {
-          name: "test_tool",
-          description: "A test tool",
-          parameters: {type: "object", properties: {}}
-        }
-      })
-    end
-  end
-
   describe ".run" do
     context "when intent is missing" do
       it "returns an error result" do

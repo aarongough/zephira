@@ -6,7 +6,7 @@ module Zephira
       def self.complete(input:, agent:)
         return [] unless input.start_with?("@")
 
-        prefix = input[1..] || ""
+        prefix = input[1..]
         pattern = if prefix.include?("/")
           prefix.end_with?("/") ? "#{prefix}*" : File.join(File.dirname(prefix), "#{File.basename(prefix)}*")
         else

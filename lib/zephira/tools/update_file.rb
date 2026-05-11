@@ -31,13 +31,6 @@ module Zephira
         content = validate(arg(:content), arg_path: "content", type: String, allow_empty: true)
         file_path = validate(arg(:file_path), arg_path: "file_path", type: String)
 
-        if content.strip.empty?
-          msg = "No replacement provided, arg `content` was empty or missing."
-          agent.status.warn(" • ERROR: #{msg}")
-          agent.logger.error(msg)
-          return error_result(message: msg)
-        end
-
         agent.status.verbose(" • Updating file: '#{file_path}'")
 
         ::FileUtils.mkdir_p(::File.dirname(file_path))

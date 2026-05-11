@@ -14,7 +14,7 @@ module Zephira
 
         def run(agent:, args:)
           puts "Bye!"
-          exit
+          exit(0)
         end
       end
     end

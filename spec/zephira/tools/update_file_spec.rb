@@ -43,13 +43,13 @@ RSpec.describe Zephira::Tools::UpdateFile do
     end
 
     context "with empty content" do
-      let(:content) { "  " }
+      let(:content) { "" }
 
-      it "returns error without writing the file" do
+      it "writes the empty file and returns success" do
         result = described_class.run(args: args, agent: agent)
-        expect(File.exist?(file_path)).to be false
-        expect(result[:outcome]).to eq("error")
-        expect(result[:error]).to match(/No replacement provided/)
+        expect(result[:outcome]).to eq("success")
+        expect(File.exist?(file_path)).to be true
+        expect(File.read(file_path)).to eq("")
       end
     end
 

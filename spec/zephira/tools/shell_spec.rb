@@ -9,10 +9,6 @@ RSpec.describe Zephira::Tools::Shell do
   let(:status) { double("status", verbose: nil, warn: nil) }
   let(:agent) { double("agent", status: status, logger: logger, update_status: nil) }
 
-  before do
-    allow(described_class).to receive(:terminal_width).and_return(described_class::TRUNCATION_LIMIT)
-  end
-
   describe ".run" do
     context "argument validation" do
       it "errors when command is missing or empty" do
@@ -88,15 +84,18 @@ RSpec.describe Zephira::Tools::Shell do
       let(:exit_status) { instance_double(Process::Status, success?: true, exitstatus: 0) }
 
       before do
-        allow(described_class).to receive(:terminal_width).and_return(described_class::TRUNCATION_LIMIT + 50)
         allow(Open3).to receive(:capture3).and_return([many_lines, "", exit_status])
       end
 
       it "truncates and appends remaining line count" do
         described_class.run(args: {"command" => "generate", "intent" => described_class.name}, agent: agent)
-        formatted = many_lines.tr("\n", " ")[0, Zephira::Tools::Shell::TRUNCATION_LIMIT - 19]
+        prefix = " • Shell command stdout: "
         remaining = many_lines.lines.size - 1
-        expected = " • Shell command stdout: #{formatted} ... (~#{remaining} more lines)"
+        postfix = " ... (~#{remaining} more lines)"
+        overhead = prefix.length + postfix.length + Zephira::Tools::Shell::TRUNCATION_OVERHEAD
+        available = Zephira::Tools::Shell::OUTPUT_TRUNCATION_WIDTH - overhead
+        formatted = many_lines.tr("\n", " ")[0, available]
+        expected = "#{prefix}#{formatted}#{postfix}"
         expect(status).to have_received(:verbose).with(expected)
       end
     end

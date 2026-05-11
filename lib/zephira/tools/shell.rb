@@ -5,7 +5,8 @@ require "open3"
 module Zephira
   class Tools
     class Shell < BaseTool
-      TRUNCATION_LIMIT = 200
+      OUTPUT_TRUNCATION_WIDTH = 200
+      TRUNCATION_OVERHEAD = 23
 
       class << self
         def name
@@ -26,18 +27,10 @@ module Zephira
             required: ["command", "intent"]
           }
         end
-
-        def terminal_width
-          TRUNCATION_LIMIT
-        end
       end
 
       def run
-        begin
-          cmd = validate(arg(:command), arg_path: "command", type: String, allow_empty: false)
-        rescue ToolUseError => error
-          return error_result(message: error.message)
-        end
+        cmd = validate(arg(:command), arg_path: "command", type: String, allow_empty: false)
 
         agent.status.verbose(" • Running shell command: '#{cmd}'")
         stdout_str, stderr_str, status_obj = Open3.capture3(cmd, chdir: Dir.pwd)
@@ -46,7 +39,7 @@ module Zephira
           message = truncate_string_to_fit(
             prefix: " • Shell command stdout: ",
             text_array: stdout_str.lines,
-            max_characters: self.class.terminal_width
+            max_characters: OUTPUT_TRUNCATION_WIDTH
           )
           agent.status.verbose(message)
         end
@@ -55,7 +48,7 @@ module Zephira
           message = truncate_string_to_fit(
             prefix: " • \e[91mShell command stderr:\e[0m ",
             text_array: stderr_str.lines,
-            max_characters: self.class.terminal_width
+            max_characters: OUTPUT_TRUNCATION_WIDTH
           )
           agent.status.verbose(message)
         end
@@ -64,15 +57,13 @@ module Zephira
         success_result(status: status_obj.exitstatus, stdout: stdout_str, stderr: stderr_str)
       rescue Errno::ENOENT
         error_result(message: "Command not found: #{arg(:command)}")
-      rescue => error
-        error_result(message: "Execution error: #{error.message}")
       end
 
       private
 
       def truncate_string_to_fit(prefix:, text_array:, max_characters:)
         postfix = " ... (~#{text_array.size - 1} more lines)"
-        overhead = prefix.length + postfix.length + 23
+        overhead = prefix.length + postfix.length + TRUNCATION_OVERHEAD
         available_length = max_characters - overhead
 
         sanitized = text_array.join

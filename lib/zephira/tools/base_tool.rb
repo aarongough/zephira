@@ -74,17 +74,6 @@ module Zephira
           result
         end
 
-        def as_json
-          {
-            type: "function",
-            function: {
-              name: name,
-              description: description,
-              parameters: parameters
-            }
-          }
-        end
-
         def name
           raise NotImplementedError, "This method should be overridden in a subclass"
         end

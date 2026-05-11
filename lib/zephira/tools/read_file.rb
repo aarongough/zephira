@@ -38,12 +38,7 @@ module Zephira
       end
 
       def run
-        paths = arg(:file_paths)
-        begin
-          validate(paths, arg_path: "file_paths", type: Array, allow_empty: false)
-        rescue ToolUseError => error
-          return error_result(message: error.message)
-        end
+        paths = validate(arg(:file_paths), arg_path: "file_paths", type: Array, allow_empty: false)
 
         results = paths.map do |file_path|
           if file_path.nil? || file_path.strip.empty?
