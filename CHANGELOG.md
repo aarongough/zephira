@@ -1,5 +1,10 @@
 # Zephira Changelog
 
+## [0.1.2]
+
+### Fixed
+- Release workflow now publishes multi-architecture Docker images (`linux/amd64` and `linux/arm64`). Previous releases only built `linux/amd64`, which prevented the sandbox from launching on Apple Silicon and other arm64 hosts.
+
 ## [0.1.1]
 
 ### Fixed
