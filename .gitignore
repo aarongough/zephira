@@ -3,3 +3,6 @@
 /.DS_Store
 /.zephira
 /.planning
+/.vendor/
+/.config/
+/.env.dev

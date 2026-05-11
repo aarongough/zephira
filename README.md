@@ -2,27 +2,23 @@
 
 Zephira is a command-line AI coding assistant written in Ruby.
 
-It is designed as a small, understandable, extensible agent that runs in your terminal, keeps conversation history, supports tool calling, and can operate inside a Docker sandbox for safer local development workflows.
-
-Zephira is intentionally simple: it aims to be a practical toy coding agent and a clear reference implementation for agentic CLI applications.
+It runs in your terminal, keeps per-project conversation history, calls a pluggable set of tools, and executes inside a Docker sandbox by default so the agent cannot touch the host system unless you opt out. The codebase is small, plugin-based, and intended to be read end-to-end.
 
 ## Features
 
-- Interactive terminal chat loop
-- Built-in slash commands like `/help`, `/models`, and `/history`
-- Tool calling for:
-  - reading and updating files
-  - listing directories
-  - running shell commands
-  - making HTTP requests
-  - searching code
-  - storing and retrieving memory
-  - web search via Brave Search API
-- OpenAI-compatible backend support
-- Configurable model selection
-- Session logging and persisted history
-- Automatic Docker sandbox support
-- Clean Ruby codebase with solid test coverage
+- Interactive terminal chat loop with per-session token-budget tracking and automatic history compaction
+- Built-in slash commands: `/help`, `/about`, `/model`, `/history`, `/compact`, `/clear`, `/bye`
+- Plugin-style tool system — drop a file in `lib/zephira/tools/` and it is auto-loaded:
+  - file I/O: `read_file`, `update_file`, `delete_file`, `list_directory`
+  - search: `code_search` (ripgrep-backed), `web_search` (Brave Search API)
+  - execution: `shell`, `http_request`
+  - persistent memory: `memory_read`, `memory_write`, `memory_list`, `memory_delete`
+- Concurrent execution of read-only tool calls in a single turn (mutating tools still run sequentially in declared order)
+- Pluggable model + backend layer — register a new model by dropping a file in `lib/zephira/models/`; backends bind per model class
+- OpenAI-compatible backend out of the box; structured to add provider-specific backends without forking the core loop
+- Docker sandbox enabled by default; `--dangerously-skip-sandbox` to opt out
+- Persistent session log + conversation history under `.zephira/` in each project
+- ~95% line coverage on a focused RSpec suite
 
 ## Installation
 
@@ -127,9 +123,10 @@ Inside Zephira, you can use slash commands:
 
 - `/help` — show available commands
 - `/about` — show project information
-- `/models` — list available models
-- `/models set MODEL_NAME` — switch models for the current session
+- `/model` — list available models
+- `/model set MODEL_NAME` — switch models for the current session
 - `/history` — print conversation history
+- `/compact` — manually compact the conversation history
 - `/clear` — clear the screen
 - `/bye` — exit the session
 
