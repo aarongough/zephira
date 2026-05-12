@@ -8,6 +8,7 @@ RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends \
       build-essential \
       git \
+      ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
 COPY Gemfile Gemfile.lock zephira.gemspec ./
@@ -29,7 +30,9 @@ LABEL org.opencontainers.image.licenses="MIT"
 
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends \
+      git \
       libreadline-dev \
+      ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system zephira && \
