@@ -45,8 +45,7 @@ module Zephira
     end
 
     def read_only?(name)
-      tool = constants.find { |candidate| candidate.name == name }
-      tool && tool.respond_to?(:read_only?) && tool.read_only?
+      constants.find { |candidate| candidate.name == name }&.read_only?
     end
 
     def find!(name)

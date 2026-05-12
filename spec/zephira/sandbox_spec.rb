@@ -8,7 +8,7 @@ RSpec.describe Zephira::Sandbox do
   before do
     allow(described_class).to receive(:resolve_image).and_return(default_image)
     allow(Kernel).to receive(:exec)
-    allow($stderr).to receive(:puts)
+    allow(described_class).to receive(:warn)
     ENV.delete("ZEPHIRA_IN_SANDBOX")
     ENV.delete("ZEPHIRA_SANDBOX")
   end
@@ -50,7 +50,7 @@ RSpec.describe Zephira::Sandbox do
         rescue SystemExit
           nil
         end
-        expect($stderr).to have_received(:puts).with(/Docker or Podman/)
+        expect(described_class).to have_received(:warn).with(/Docker or Podman/)
       end
 
       it "prints instructions including --dangerously-skip-sandbox to stderr" do
@@ -59,7 +59,7 @@ RSpec.describe Zephira::Sandbox do
         rescue SystemExit
           nil
         end
-        expect($stderr).to have_received(:puts).with(/--dangerously-skip-sandbox/)
+        expect(described_class).to have_received(:warn).with(/--dangerously-skip-sandbox/)
       end
     end
 

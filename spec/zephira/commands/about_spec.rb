@@ -8,7 +8,7 @@ RSpec.describe Zephira::Commands::About do
   describe ".run" do
     it "prints version information" do
       expect { described_class.run(agent: agent, args: []) }
-        .to output(/Zephira.*#{Zephira::VERSION}/m).to_stdout
+        .to output(/Zephira.*#{Zephira::VERSION}/mo).to_stdout
     end
   end
 end

@@ -32,7 +32,7 @@ RSpec.describe "commands dispatch", :integration do
 
   describe "/about" do
     it "prints the version" do
-      expect { run_command("about") }.to output(/#{Regexp.escape(Zephira::VERSION)}/).to_stdout
+      expect { run_command("about") }.to output(/#{Regexp.escape(Zephira::VERSION)}/o).to_stdout
     end
 
     it "prints the name" do

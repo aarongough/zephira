@@ -2,10 +2,10 @@
 
 require "spec_helper"
 
+BRAVE_SEARCH_URL = "https://api.search.brave.com/res/v1/web/search"
+
 RSpec.describe "web_search tool", :integration do
   include FakeFS::SpecHelpers
-
-  BRAVE_SEARCH_URL = "https://api.search.brave.com/res/v1/web/search"
 
   before do
     allow(Zephira::Config).to receive(:read).and_call_original

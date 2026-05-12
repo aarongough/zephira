@@ -5,10 +5,10 @@ require "io/console"
 
 module Zephira
   class Sandbox
-    GHCR_IMAGE           = "ghcr.io/aarongough/zephira"
+    GHCR_IMAGE = "ghcr.io/aarongough/zephira"
     DERIVED_IMAGE_PREFIX = "zephira-sandbox"
-    CONTAINER_RUNTIMES   = %w[docker podman].freeze
-    SANDBOX_HOME         = "/tmp/zephira-home"
+    CONTAINER_RUNTIMES = %w[docker podman].freeze
+    SANDBOX_HOME = "/tmp/zephira-home"
 
     FORWARDED_ENV_PATTERNS = [/\AZEPHIRA_/].freeze
     FORWARDED_ENV_EXCLUDES = %w[ZEPHIRA_IN_SANDBOX ZEPHIRA_SANDBOX].freeze
@@ -17,15 +17,15 @@ module Zephira
     OUTER_TR = "╗"
     OUTER_BL = "╚"
     OUTER_BR = "╝"
-    OUTER_H  = "═"
-    OUTER_V  = "║"
+    OUTER_H = "═"
+    OUTER_V = "║"
 
     INNER_TL = "┌"
     INNER_TR = "┐"
     INNER_BL = "└"
     INNER_BR = "┘"
-    INNER_H  = "─"
-    INNER_V  = "│"
+    INNER_H = "─"
+    INNER_V = "│"
     INNER_PADDING = 3
 
     class << self
@@ -37,7 +37,7 @@ module Zephira
         abort_with_sandbox_error unless runtime
 
         target = resolve_image(runtime)
-        $stderr.puts "[Zephira] Launching in #{runtime.capitalize} sandbox (#{target})..."
+        warn "[Zephira] Launching in #{runtime.capitalize} sandbox (#{target})..."
         Kernel.exec(*build_container_command(argv, target, runtime))
       end
 
@@ -73,9 +73,9 @@ module Zephira
           ""
         ]
 
-        max_warn_width    = warn_lines.map { |line| visible_length(line) }.max
+        max_warn_width = warn_lines.map { |line| visible_length(line) }.max
         max_content_width = instruction_lines.map { |line| visible_length(line) }.max
-        inner_width       = [max_warn_width, max_content_width - 10].max
+        inner_width = [max_warn_width, max_content_width - 10].max
 
         inner_box = [
           "  " + inner_top(inner_width),
@@ -90,7 +90,7 @@ module Zephira
           *content.map { |line| outer_row(line, width) },
           outer_bottom(width),
           ""
-        ].each { |line| $stderr.puts line }
+        ].each { |line| warn line }
         exit(1)
       end
 
@@ -127,7 +127,7 @@ module Zephira
 
       def terminal_width
         IO.console&.winsize&.last || 80
-      rescue StandardError
+      rescue
         80
       end
 
@@ -145,7 +145,7 @@ module Zephira
 
         derived = derived_image_name(base)
         unless image_exists?(derived, runtime)
-          $stderr.puts "[Zephira] Building sandbox image from #{base} with #{runtime}..."
+          warn "[Zephira] Building sandbox image from #{base} with #{runtime}..."
           build_derived_image(base, derived, runtime)
         end
         derived

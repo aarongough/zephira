@@ -14,7 +14,7 @@ module Zephira
         end
 
         Dir.glob(pattern).map do |path|
-          "@#{path}#{File.directory?(path) ? "/" : ""}"
+          "@#{path}#{"/" if File.directory?(path)}"
         end
       end
     end

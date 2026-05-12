@@ -77,7 +77,7 @@ module Zephira
           return error_result(message: "`query` must be a non-empty string")
         end
 
-        if num_results && (!num_results.is_a?(Integer) || !(1..50).include?(num_results))
+        if num_results && (!num_results.is_a?(Integer) || !(1..50).cover?(num_results))
           return error_result(message: "`num_results` must be an integer between 1 and 50")
         end
 

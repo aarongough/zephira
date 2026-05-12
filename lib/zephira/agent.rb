@@ -68,7 +68,7 @@ module Zephira
       The user's current `ls -R` is: @@@LSR@@@
     PROMPT
 
-    LOGO = <<~'LOGO'
+    LOGO = <<~LOGO
       ░▒▓████████▓▒░░▒▓████████▓▒░░▒▓███████▓▒░ ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓███████▓▒░  ░▒▓██████▓▒░
            ░▒▓██▓▒░ ░▒▓█▓▒░       ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░
          ░▒▓██▓▒░   ░▒▓██████▓▒░  ░▒▓███████▓▒░ ░▒▓████████▓▒░░▒▓█▓▒░░▒▓███████▓▒░ ░▒▓████████▓▒░
@@ -106,7 +106,7 @@ module Zephira
     def thinking(model_class)
       thinkmojis = %w[🤔 🧠 💭 🤯 🧐 ⏳ 🔄 🌀 🤨 💡 🧩 🔍 📚 ⚙️]
       token_count = Tokens.estimate(history.messages.to_json)
-      update_status("Thinking... #{thinkmojis.shuffle.first} " + Formatter.color(:grey, "(#{model_class.model_name} - #{token_count} tokens)"))
+      update_status("Thinking... #{thinkmojis.sample} " + Formatter.color(:grey, "(#{model_class.model_name} - #{token_count} tokens)"))
     end
 
     def update_status(msg)
@@ -215,8 +215,8 @@ module Zephira
       print TTY::Cursor.move_to(0, screen_height - 3)
       puts Formatter.color(:grey, "-" * width)
 
-      sandbox_label = ENV["ZEPHIRA_IN_SANDBOX"] == "1" ? "sandboxed" : "⚠ DANGER: NO SANDBOX"
-      sandbox_color = ENV["ZEPHIRA_IN_SANDBOX"] == "1" ? :green : :red
+      sandbox_label = (ENV["ZEPHIRA_IN_SANDBOX"] == "1") ? "sandboxed" : "⚠ DANGER: NO SANDBOX"
+      sandbox_color = (ENV["ZEPHIRA_IN_SANDBOX"] == "1") ? :green : :red
       right_text = "ctrl+c to exit | '/help' + enter to see commands | #{context_pct}% context left"
       padding = [width - sandbox_label.length - right_text.length, 1].max
       puts Formatter.color(sandbox_color, sandbox_label) + " " * padding + Formatter.color(:grey, right_text)
