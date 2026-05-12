@@ -8,6 +8,7 @@ module Zephira
     GHCR_IMAGE           = "ghcr.io/aarongough/zephira"
     DERIVED_IMAGE_PREFIX = "zephira-sandbox"
     CONTAINER_RUNTIMES   = %w[docker podman].freeze
+    SANDBOX_HOME         = "/tmp/zephira-home"
 
     FORWARDED_ENV_PATTERNS = [/\AZEPHIRA_/].freeze
     FORWARDED_ENV_EXCLUDES = %w[ZEPHIRA_IN_SANDBOX ZEPHIRA_SANDBOX].freeze
@@ -179,14 +180,17 @@ module Zephira
         cmd = [runtime, "run", "--rm", "-i"]
         cmd << "-t" if $stdout.tty?
 
+        cmd += ["--user", "#{Process.uid}:#{Process.gid}"]
         cmd += ["-e", "ZEPHIRA_IN_SANDBOX=1"]
+        cmd += ["-e", "HOME=#{SANDBOX_HOME}"]
         cmd += ["-v", "#{Dir.pwd}:/workspace:rw"]
+        cmd += ["-v", "#{sandbox_home_mount(runtime)}:#{SANDBOX_HOME}:rw"]
 
         global_config = File.expand_path("~/.zephira.yml")
-        cmd += ["-v", "#{global_config}:/root/.zephira.yml:ro"] if File.exist?(global_config)
+        cmd += ["-v", "#{global_config}:#{SANDBOX_HOME}/.zephira.yml:ro"] if File.exist?(global_config)
 
         global_dir = File.expand_path("~/.zephira")
-        cmd += ["-v", "#{global_dir}:/root/.zephira:ro"] if File.exist?(global_dir) && File.directory?(global_dir)
+        cmd += ["-v", "#{global_dir}:#{SANDBOX_HOME}/.zephira:ro"] if File.exist?(global_dir) && File.directory?(global_dir)
 
         forwarded_env_keys.each do |key|
           cmd += ["-e", "#{key}=#{ENV[key]}"]
@@ -196,6 +200,12 @@ module Zephira
         cmd << image
         cmd += ["zephira"] + argv
         cmd
+      end
+
+      def sandbox_home_mount(runtime)
+        return "zephira-home-#{Process.uid}" if runtime == "docker"
+
+        File.expand_path("~/.zephira/sandbox-home")
       end
     end
   end

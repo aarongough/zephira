@@ -32,6 +32,11 @@ RUN apt-get update -qq && \
       libreadline-dev \
     && rm -rf /var/lib/apt/lists/*
 
+RUN groupadd --system zephira && \
+    useradd --system --gid zephira --create-home --shell /bin/bash zephira && \
+    mkdir -p /workspace && \
+    chown zephira:zephira /workspace
+
 COPY --from=deps /usr/local/bundle /usr/local/bundle
 COPY --from=deps /build/zephira-*.gem /tmp/
 
@@ -39,5 +44,7 @@ RUN gem install --local --no-document /tmp/zephira-*.gem && \
     rm -f /tmp/zephira-*.gem
 
 WORKDIR /workspace
+
+USER zephira
 
 CMD ["zephira"]

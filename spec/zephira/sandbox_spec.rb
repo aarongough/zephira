@@ -83,14 +83,26 @@ RSpec.describe Zephira::Sandbox do
         expect(captured_exec_args).to include("--rm")
       end
 
+      it "runs the container as the host uid and gid" do
+        expect(captured_exec_args).to include("--user", "#{Process.uid}:#{Process.gid}")
+      end
+
       it "includes the sentinel env var" do
         args = captured_exec_args
         idx = args.index("-e")
         expect(args[idx + 1]).to eq("ZEPHIRA_IN_SANDBOX=1")
       end
 
+      it "sets HOME inside the container to the sandbox home" do
+        expect(captured_exec_args).to include("HOME=/tmp/zephira-home")
+      end
+
       it "mounts the current directory as /workspace" do
         expect(captured_exec_args).to include("#{Dir.pwd}:/workspace:rw")
+      end
+
+      it "mounts a writable sandbox home volume" do
+        expect(captured_exec_args).to include("zephira-home-#{Process.uid}:/tmp/zephira-home:rw")
       end
 
       it "sets the working directory to /workspace" do
@@ -136,14 +148,40 @@ RSpec.describe Zephira::Sandbox do
         ENV.delete("ZEPHIRA_MODEL")
         expect(captured_exec_args).not_to include(start_with("ZEPHIRA_MODEL="))
       end
+
+      it "mounts global config into the sandbox home instead of /root" do
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with(File.expand_path("~/.zephira.yml")).and_return(true)
+        expect(captured_exec_args).to include("#{File.expand_path("~/.zephira.yml") }:/tmp/zephira-home/.zephira.yml:ro")
+      end
+
+      it "mounts the global zephira directory into the sandbox home instead of /root" do
+        global_dir = File.expand_path("~/.zephira")
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:directory?).and_call_original
+        allow(File).to receive(:exist?).with(global_dir).and_return(true)
+        allow(File).to receive(:directory?).with(global_dir).and_return(true)
+        expect(captured_exec_args).to include("#{global_dir}:/tmp/zephira-home/.zephira:ro")
+      end
     end
 
     context "when sandbox should activate with Podman" do
       before { allow(described_class).to receive(:container_runtime).and_return("podman") }
 
+      def captured_exec_args(argv = ["--extra"])
+        args = nil
+        allow(Kernel).to receive(:exec) { |*a| args = a }
+        described_class.exec_if_needed!(argv)
+        args
+      end
+
       it "calls Kernel.exec with podman run as the first two args" do
         described_class.exec_if_needed!([])
         expect(Kernel).to have_received(:exec).with("podman", "run", any_args)
+      end
+
+      it "uses a host-backed sandbox home path for Podman" do
+        expect(captured_exec_args).to include("#{File.expand_path("~/.zephira/sandbox-home")}:/tmp/zephira-home:rw")
       end
     end
   end

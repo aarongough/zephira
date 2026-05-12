@@ -94,6 +94,10 @@ By default, Zephira attempts to run inside a container for safer execution.
 
 When sandboxing is enabled, Zephira re-executes itself inside Docker or Podman and mounts your current project into `/workspace`. This gives the agent access to the project while helping isolate it from the host system.
 
+To keep files created or edited in `/workspace` owned by the host user instead of root, Zephira runs the sandboxed process as your current host UID/GID at container runtime.
+
+Zephira also mounts your global config into a sandbox-specific home directory inside the container so the agent can read `~/.zephira.yml` and `~/.zephira/` without depending on `/root`.
+
 Zephira prefers Docker when both Docker and Podman are available. If Docker is unavailable but Podman is available, Zephira uses Podman automatically.
 
 If neither Docker nor Podman is available, Zephira exits with an error and explains how to proceed.
