@@ -20,7 +20,7 @@ A command-line AI coding assistant written in Ruby. Runs in your terminal, keeps
    zephira
    ```
 
-   On first run, Zephira launches an onboarding wizard that prompts for your API key and writes it to `~/.zephira.yml` (with `0600` permissions). You can also set `ZEPHIRA_API_KEY` in your environment to skip the wizard entirely.
+   On first run, Zephira launches an onboarding wizard that prompts for your OpenAI API key and writes it to `~/.zephira.yml` (with `0600` permissions). You can also set `ZEPHIRA_API_KEY` in your environment to skip the wizard entirely. To target a different OpenAI-compatible endpoint, set `ZEPHIRA_BASE_URL` alongside your key.
 
 ## Features
 

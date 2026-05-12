@@ -38,7 +38,7 @@ module Zephira
       private
 
       def prompt_key
-        print "  API key: "
+        print "  OpenAI API key: "
         raw = $stdin.noecho(&:gets)
         puts
         return nil if raw.nil?
@@ -61,10 +61,13 @@ module Zephira
           "",
           "  #{Formatter.color(:green, Formatter.style(:bold, "Welcome to Zephira"))}",
           "",
-          "  Zephira needs an API key to talk to your model backend.",
-          "  We'll save it to ~/.zephira.yml so it's reused on every run.",
+          "  Zephira talks to OpenAI by default. Paste your OpenAI API key below",
+          "  and we'll save it to ~/.zephira.yml for future runs.",
           "",
-          "  Paste your key below (input is hidden), or press Enter to cancel.",
+          "  To target a different OpenAI-compatible endpoint instead, cancel and",
+          "  set ZEPHIRA_BASE_URL alongside your key in ~/.zephira.yml.",
+          "",
+          "  Input is hidden. Press Enter on an empty line to cancel.",
           ""
         ]
         render_box(lines, :green)
@@ -86,7 +89,7 @@ module Zephira
 
       def print_no_tty_error
         warn ""
-        warn "  #{Formatter.color(:red, "ERROR:")} Zephira needs an API key, but stdin is not a TTY."
+        warn "  #{Formatter.color(:red, "ERROR:")} Zephira needs an OpenAI API key, but stdin is not a TTY."
         warn ""
         warn "  Set ZEPHIRA_API_KEY in your environment, or populate"
         warn "  ~/.zephira.yml with:"
