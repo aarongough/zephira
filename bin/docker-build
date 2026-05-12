@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+IMAGE_TAG="${ZEPHIRA_DEV_IMAGE:-zephira-dev}"
+
+printf '==> Building %s from current working tree\n' "$IMAGE_TAG"
+docker build -t "$IMAGE_TAG" .
+
+printf '==> Built image: %s\n' "$IMAGE_TAG"
