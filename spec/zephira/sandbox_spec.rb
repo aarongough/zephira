@@ -6,7 +6,6 @@ RSpec.describe Zephira::Sandbox do
   let(:default_image) { "ghcr.io/aarongough/zephira:#{Zephira::VERSION}" }
 
   before do
-    allow(described_class).to receive(:container_runtime).and_return("docker")
     allow(described_class).to receive(:resolve_image).and_return(default_image)
     allow(Kernel).to receive(:exec)
     allow($stderr).to receive(:puts)
@@ -152,7 +151,7 @@ RSpec.describe Zephira::Sandbox do
       it "mounts global config into the sandbox home instead of /root" do
         allow(File).to receive(:exist?).and_call_original
         allow(File).to receive(:exist?).with(File.expand_path("~/.zephira.yml")).and_return(true)
-        expect(captured_exec_args).to include("#{File.expand_path("~/.zephira.yml") }:/tmp/zephira-home/.zephira.yml:ro")
+        expect(captured_exec_args).to include("#{File.expand_path("~/.zephira.yml")}:/tmp/zephira-home/.zephira.yml:ro")
       end
 
       it "mounts the global zephira directory into the sandbox home instead of /root" do
@@ -200,6 +199,7 @@ RSpec.describe Zephira::Sandbox do
 
   describe "container_runtime (private)" do
     it "prefers Docker when both Docker and Podman are available" do
+      allow(described_class).to receive(:runtime_available?).and_call_original
       allow(described_class).to receive(:runtime_available?).with("docker").and_return(true)
       allow(described_class).to receive(:runtime_available?).with("podman").and_return(true)
 
@@ -207,6 +207,7 @@ RSpec.describe Zephira::Sandbox do
     end
 
     it "falls back to Podman when Docker is unavailable" do
+      allow(described_class).to receive(:runtime_available?).and_call_original
       allow(described_class).to receive(:runtime_available?).with("docker").and_return(false)
       allow(described_class).to receive(:runtime_available?).with("podman").and_return(true)
 
@@ -214,6 +215,7 @@ RSpec.describe Zephira::Sandbox do
     end
 
     it "returns nil when neither Docker nor Podman is available" do
+      allow(described_class).to receive(:runtime_available?).and_call_original
       allow(described_class).to receive(:runtime_available?).with("docker").and_return(false)
       allow(described_class).to receive(:runtime_available?).with("podman").and_return(false)
 
