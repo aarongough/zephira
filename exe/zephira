@@ -3,4 +3,5 @@
 
 require "zephira"
 
+Zephira::ORIGINAL_ARGV = ARGV.dup.freeze
 Zephira::CLI.new(ARGV)
