@@ -3,21 +3,20 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IMAGE_TAG="${ZEPHIRA_DEV_IMAGE:-zephira-dev}"
-CONTAINER_NAME="${ZEPHIRA_DEV_CONTAINER:-zephira-dev-shell}"
 HOST_UID="$(id -u)"
 HOST_GID="$(id -g)"
+
+"$SCRIPT_DIR/docker-build"
+
 DOCKER_ARGS=(
   --rm
   -it
-  --name "$CONTAINER_NAME"
   --user "${HOST_UID}:${HOST_GID}"
   -e HOME=/tmp/zephira-home
   -e ZEPHIRA_IN_SANDBOX=1
   -v "$PWD:/workspace"
   -w /workspace
 )
-
-"$SCRIPT_DIR/docker-build"
 
 if [ -f "$HOME/.zephira.yml" ]; then
   DOCKER_ARGS+=( -v "$HOME/.zephira.yml:/tmp/zephira-home/.zephira.yml:ro" )
@@ -27,4 +26,8 @@ if [ -d "$HOME/.zephira" ]; then
   DOCKER_ARGS+=( -v "$HOME/.zephira:/tmp/zephira-home/.zephira:rw" )
 fi
 
-exec docker run "${DOCKER_ARGS[@]}" "$IMAGE_TAG" bash
+if [ "$#" -eq 0 ]; then
+  exec docker run "${DOCKER_ARGS[@]}" "$IMAGE_TAG" bash
+else
+  exec docker run "${DOCKER_ARGS[@]}" "$IMAGE_TAG" bash -lc "$*"
+fi
