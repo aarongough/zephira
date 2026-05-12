@@ -29,7 +29,7 @@ A command-line AI coding assistant written in Ruby. Runs in your terminal, keeps
 ## Features
 
 - Interactive terminal chat loop with per-session token-budget tracking and automatic history compaction
-- Built-in slash commands: `/help`, `/about`, `/model`, `/history`, `/compact`, `/clear`, `/bye`
+- Built-in slash commands: `/help`, `/about`, `/model`, `/history`, `/compact`, `/clear`, `/reload`, `/bye`
 - Plugin-style tool system — drop a file in `lib/zephira/tools/` and it is auto-loaded:
   - file I/O: `read_file`, `update_file`, `delete_file`, `list_directory`
   - search: `code_search` (ripgrep-backed), `web_search` (Brave Search API)
@@ -121,6 +121,7 @@ Inside Zephira, you can use slash commands:
 - `/history` — print conversation history
 - `/compact` — manually compact the conversation history
 - `/clear` — clear the screen
+- `/reload` — re-execute the agent process to pick up local code changes (conversation history is preserved)
 - `/bye` — exit the session
 
 ## Available models
@@ -188,6 +189,24 @@ Run linting:
 ```sh
 bundle exec standardrb --fix
 ```
+
+### Containerized development
+
+For an isolated dev environment that mirrors the shipped sandbox image, the `bin/` directory provides helper scripts. All three rebuild the `zephira-dev` image first (Docker caches layers, so this is a no-op after the first run).
+
+- `bin/docker-build` — build the `zephira-dev` image from the current working tree.
+- `bin/docker-zephira` — launch Zephira inside the container, running against the mounted working tree (`bundle exec ruby exe/zephira`). Use this when iterating on the agent itself.
+- `bin/docker-shell [command]` — start an interactive `bash` inside the container, or run an arbitrary command. Useful for running specs or linting against the containerized Ruby:
+
+  ```sh
+  bin/docker-shell                                # interactive shell
+  bin/docker-shell 'bundle exec rspec'            # run the suite in-container
+  bin/docker-shell 'bundle exec standardrb --fix' # lint in-container
+  ```
+
+Both runner scripts mount the current directory at `/workspace`, run as the host UID/GID, and mount `~/.zephira.yml` and `~/.zephira/` into the container so configuration and history persist across runs.
+
+While inside a running Zephira session started this way, the `/reload` slash command re-executes the agent process — picking up edits to `lib/zephira/**` without rebuilding the image or losing conversation history (which is persisted to `.zephira/history.jsonl`). This is the fastest inner loop for iterating on agent code.
 
 ## Design goals
 
