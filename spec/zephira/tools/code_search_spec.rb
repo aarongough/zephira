@@ -64,7 +64,7 @@ RSpec.describe Zephira::Tools::CodeSearch do
     context "when rg is not available" do
       before do
         allow(Dir).to receive(:exist?).and_return(true)
-        allow(Open3).to receive(:capture3).with("command", "-v", "rg").and_return(["", "", double(success?: false)])
+        allow(ENV).to receive(:fetch).with("PATH", "").and_return("")
       end
 
       it "returns per-query error for missing rg" do
@@ -88,7 +88,11 @@ RSpec.describe Zephira::Tools::CodeSearch do
 
       before do
         allow(Dir).to receive(:exist?).and_return(true)
-        allow(Open3).to receive(:capture3).with("command", "-v", "rg").and_return(["rg", "", double(success?: true)])
+        allow(ENV).to receive(:fetch).with("PATH", "").and_return("/bin:/usr/bin")
+        allow(File).to receive(:file?).and_call_original
+        allow(File).to receive(:executable?).and_call_original
+        allow(File).to receive(:file?).with("/bin/rg").and_return(true)
+        allow(File).to receive(:executable?).with("/bin/rg").and_return(true)
         allow(Open3).to receive(:capture3).with("rg", "--json", "-C", "2", "-n", "-i", "foo", "/some/path")
           .and_return([rg_json, "", double(success?: true)])
       end
@@ -117,7 +121,11 @@ RSpec.describe Zephira::Tools::CodeSearch do
     context "when case_sensitive is true" do
       before do
         allow(Dir).to receive(:exist?).and_return(true)
-        allow(Open3).to receive(:capture3).with("command", "-v", "rg").and_return(["rg", "", double(success?: true)])
+        allow(ENV).to receive(:fetch).with("PATH", "").and_return("/bin:/usr/bin")
+        allow(File).to receive(:file?).and_call_original
+        allow(File).to receive(:executable?).and_call_original
+        allow(File).to receive(:file?).with("/bin/rg").and_return(true)
+        allow(File).to receive(:executable?).with("/bin/rg").and_return(true)
         allow(Open3).to receive(:capture3).with("rg", "--json", "-C", "2", "-n", "Foo", "/some/path")
           .and_return(["", "", double(success?: true)])
       end

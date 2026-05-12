@@ -127,8 +127,12 @@ module Zephira
       end
 
       def executable_available?(cmd)
-        _, _, status = Open3.capture3("command", "-v", cmd)
-        status.success?
+        ENV.fetch("PATH", "").split(File::PATH_SEPARATOR).any? do |directory|
+          next false if directory.nil? || directory.empty?
+
+          executable = File.join(directory, cmd)
+          File.file?(executable) && File.executable?(executable)
+        end
       end
     end
   end
