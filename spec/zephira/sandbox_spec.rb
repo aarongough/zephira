@@ -6,7 +6,7 @@ RSpec.describe Zephira::Sandbox do
   let(:default_image) { "ghcr.io/aarongough/zephira:#{Zephira::VERSION}" }
 
   before do
-    allow(described_class).to receive(:docker_available?).and_return(true)
+    allow(described_class).to receive(:container_runtime).and_return("docker")
     allow(described_class).to receive(:resolve_image).and_return(default_image)
     allow(Kernel).to receive(:exec)
     allow($stderr).to receive(:puts)
@@ -38,11 +38,20 @@ RSpec.describe Zephira::Sandbox do
       end
     end
 
-    context "when Docker is unavailable" do
-      before { allow(described_class).to receive(:docker_available?).and_return(false) }
+    context "when no supported container runtime is available" do
+      before { allow(described_class).to receive(:container_runtime).and_return(nil) }
 
       it "exits with a non-zero status" do
         expect { described_class.exec_if_needed!([]) }.to raise_error(SystemExit)
+      end
+
+      it "prints instructions mentioning Docker and Podman to stderr" do
+        begin
+          described_class.exec_if_needed!([])
+        rescue SystemExit
+          nil
+        end
+        expect($stderr).to have_received(:puts).with(/Docker or Podman/)
       end
 
       it "prints instructions including --dangerously-skip-sandbox to stderr" do
@@ -55,11 +64,13 @@ RSpec.describe Zephira::Sandbox do
       end
     end
 
-    context "when sandbox should activate" do
-      def captured_exec_args
+    context "when sandbox should activate with Docker" do
+      before { allow(described_class).to receive(:container_runtime).and_return("docker") }
+
+      def captured_exec_args(argv = ["--extra"])
         args = nil
         allow(Kernel).to receive(:exec) { |*a| args = a }
-        described_class.exec_if_needed!(["--extra"])
+        described_class.exec_if_needed!(argv)
         args
       end
 
@@ -93,10 +104,7 @@ RSpec.describe Zephira::Sandbox do
       end
 
       it "passes argv through to the container" do
-        described_class.exec_if_needed!(["--verbose", "foo"])
-        args = nil
-        allow(Kernel).to receive(:exec) { |*a| args = a }
-        described_class.exec_if_needed!(["--verbose", "foo"])
+        args = captured_exec_args(["--verbose", "foo"])
         expect(args).to include("--verbose", "foo")
       end
 
@@ -129,17 +137,49 @@ RSpec.describe Zephira::Sandbox do
         expect(captured_exec_args).not_to include(start_with("ZEPHIRA_MODEL="))
       end
     end
+
+    context "when sandbox should activate with Podman" do
+      before { allow(described_class).to receive(:container_runtime).and_return("podman") }
+
+      it "calls Kernel.exec with podman run as the first two args" do
+        described_class.exec_if_needed!([])
+        expect(Kernel).to have_received(:exec).with("podman", "run", any_args)
+      end
+    end
   end
 
   describe "forwarded_env_keys (private)" do
     it "excludes ZEPHIRA_IN_SANDBOX and ZEPHIRA_SANDBOX even if set" do
       ENV["ZEPHIRA_IN_SANDBOX"] = "1"
-      ENV["ZEPHIRA_SANDBOX"]    = "false"
+      ENV["ZEPHIRA_SANDBOX"] = "false"
       keys = described_class.send(:forwarded_env_keys)
       expect(keys).not_to include("ZEPHIRA_IN_SANDBOX", "ZEPHIRA_SANDBOX")
     ensure
       ENV.delete("ZEPHIRA_IN_SANDBOX")
       ENV.delete("ZEPHIRA_SANDBOX")
+    end
+  end
+
+  describe "container_runtime (private)" do
+    it "prefers Docker when both Docker and Podman are available" do
+      allow(described_class).to receive(:runtime_available?).with("docker").and_return(true)
+      allow(described_class).to receive(:runtime_available?).with("podman").and_return(true)
+
+      expect(described_class.send(:container_runtime)).to eq("docker")
+    end
+
+    it "falls back to Podman when Docker is unavailable" do
+      allow(described_class).to receive(:runtime_available?).with("docker").and_return(false)
+      allow(described_class).to receive(:runtime_available?).with("podman").and_return(true)
+
+      expect(described_class.send(:container_runtime)).to eq("podman")
+    end
+
+    it "returns nil when neither Docker nor Podman is available" do
+      allow(described_class).to receive(:runtime_available?).with("docker").and_return(false)
+      allow(described_class).to receive(:runtime_available?).with("podman").and_return(false)
+
+      expect(described_class.send(:container_runtime)).to be_nil
     end
   end
 
@@ -150,7 +190,7 @@ RSpec.describe Zephira::Sandbox do
       before { allow(Zephira::Config).to receive(:read).with("ZEPHIRA_BASE_IMAGE").and_return(nil) }
 
       it "returns the default GHCR image tagged with VERSION" do
-        expect(described_class.send(:resolve_image)).to eq(default_image)
+        expect(described_class.send(:resolve_image, "docker")).to eq(default_image)
       end
     end
 
@@ -161,28 +201,44 @@ RSpec.describe Zephira::Sandbox do
       end
 
       it "returns a derived image name containing the base image" do
-        name = described_class.send(:resolve_image)
+        name = described_class.send(:resolve_image, "docker")
         expect(name).to start_with("zephira-sandbox-python-3.12-slim")
       end
 
       it "includes the Zephira version as the tag" do
-        name = described_class.send(:resolve_image)
+        name = described_class.send(:resolve_image, "docker")
         expect(name).to end_with(":#{Zephira::VERSION}")
       end
 
       it "builds the derived image when it does not exist locally" do
         allow(described_class).to receive(:image_exists?).and_return(false)
         allow(described_class).to receive(:build_derived_image)
-        described_class.send(:resolve_image)
-        expect(described_class).to have_received(:build_derived_image)
+        described_class.send(:resolve_image, "docker")
+        expect(described_class).to have_received(:build_derived_image).with("python:3.12-slim", kind_of(String), "docker")
       end
 
       it "skips building when the derived image already exists" do
         allow(described_class).to receive(:image_exists?).and_return(true)
         allow(described_class).to receive(:build_derived_image)
-        described_class.send(:resolve_image)
+        described_class.send(:resolve_image, "docker")
         expect(described_class).not_to have_received(:build_derived_image)
       end
+    end
+  end
+
+  describe "image_exists? (private)" do
+    it "uses the selected runtime for image inspection" do
+      allow(described_class).to receive(:system)
+      described_class.send(:image_exists?, "my-image:tag", "podman")
+      expect(described_class).to have_received(:system).with("podman image inspect my-image:tag > /dev/null 2>&1")
+    end
+  end
+
+  describe "build_derived_image (private)" do
+    it "uses the selected runtime for image builds" do
+      allow(described_class).to receive(:system)
+      described_class.send(:build_derived_image, "ruby:3.3", "zephira-test:#{Zephira::VERSION}", "podman")
+      expect(described_class).to have_received(:system).with(match(/^podman build -t zephira-test:/))
     end
   end
 end

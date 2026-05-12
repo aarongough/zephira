@@ -7,6 +7,7 @@ module Zephira
   class Sandbox
     GHCR_IMAGE           = "ghcr.io/aarongough/zephira"
     DERIVED_IMAGE_PREFIX = "zephira-sandbox"
+    CONTAINER_RUNTIMES   = %w[docker podman].freeze
 
     FORWARDED_ENV_PATTERNS = [/\AZEPHIRA_/].freeze
     FORWARDED_ENV_EXCLUDES = %w[ZEPHIRA_IN_SANDBOX ZEPHIRA_SANDBOX].freeze
@@ -31,11 +32,12 @@ module Zephira
         return if ENV["ZEPHIRA_IN_SANDBOX"] == "1"
         return if ENV["ZEPHIRA_SANDBOX"] == "false"
 
-        abort_with_sandbox_error unless docker_available?
+        runtime = container_runtime
+        abort_with_sandbox_error unless runtime
 
-        target = resolve_image
-        $stderr.puts "[Zephira] Launching in Docker sandbox (#{target})..."
-        Kernel.exec(*build_docker_command(argv, target))
+        target = resolve_image(runtime)
+        $stderr.puts "[Zephira] Launching in #{runtime.capitalize} sandbox (#{target})..."
+        Kernel.exec(*build_container_command(argv, target, runtime))
       end
 
       private
@@ -54,12 +56,15 @@ module Zephira
 
         instruction_lines = [
           "",
-          "  #{Formatter.color(:red, "ERROR:")} Zephira requires Docker to run safely in a sandboxed environment.",
+          "  #{Formatter.color(:red, "ERROR:")} Zephira requires Docker or Podman to run safely in a sandboxed",
+          "  environment.",
           "",
-          "  Docker was not found or is not currently running. To fix this:",
+          "  Neither Docker nor Podman was found or currently running. To fix this:",
           "",
           "    1. Install Docker Desktop:  https://docs.docker.com/get-docker/",
-          "    2. Start Docker and confirm it is running:  docker info",
+          "       or install Podman:      https://podman.io/getting-started/installation",
+          "    2. Start the runtime and confirm it is running:",
+          "       docker info   or   podman info",
           "",
           "  To bypass the sandbox (not recommended):",
           "",
@@ -125,18 +130,22 @@ module Zephira
         80
       end
 
-      def docker_available?
-        system("docker info > /dev/null 2>&1")
+      def runtime_available?(binary)
+        system("#{binary} info > /dev/null 2>&1")
       end
 
-      def resolve_image
+      def container_runtime
+        CONTAINER_RUNTIMES.find { |runtime| runtime_available?(runtime) }
+      end
+
+      def resolve_image(runtime)
         base = Config.read("ZEPHIRA_BASE_IMAGE")
         return "#{GHCR_IMAGE}:#{VERSION}" unless base
 
         derived = derived_image_name(base)
-        unless image_exists?(derived)
-          $stderr.puts "[Zephira] Building sandbox image from #{base}..."
-          build_derived_image(base, derived)
+        unless image_exists?(derived, runtime)
+          $stderr.puts "[Zephira] Building sandbox image from #{base} with #{runtime}..."
+          build_derived_image(base, derived, runtime)
         end
         derived
       end
@@ -146,16 +155,16 @@ module Zephira
         "#{DERIVED_IMAGE_PREFIX}-#{sanitized}:#{VERSION}"
       end
 
-      def image_exists?(name)
-        system("docker image inspect #{name} > /dev/null 2>&1")
+      def image_exists?(name, runtime)
+        system("#{runtime} image inspect #{name} > /dev/null 2>&1")
       end
 
-      def build_derived_image(base_image, target_name)
+      def build_derived_image(base_image, target_name, runtime)
         dockerfile = "FROM #{base_image}\nRUN gem install zephira:#{VERSION} --no-document\n"
         Tempfile.create(["zephira-sandbox", ".dockerfile"]) do |file|
           file.write(dockerfile)
           file.flush
-          system("docker build -t #{target_name} -f #{file.path} .")
+          system("#{runtime} build -t #{target_name} -f #{file.path} .")
         end
       end
 
@@ -166,8 +175,8 @@ module Zephira
           .sort
       end
 
-      def build_docker_command(argv, image)
-        cmd = ["docker", "run", "--rm", "-i"]
+      def build_container_command(argv, image, runtime)
+        cmd = [runtime, "run", "--rm", "-i"]
         cmd << "-t" if $stdout.tty?
 
         cmd += ["-e", "ZEPHIRA_IN_SANDBOX=1"]

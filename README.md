@@ -1,10 +1,12 @@
 # Zephira
 
-A command-line AI coding assistant written in Ruby. Runs in your terminal, keeps per-project conversation history, and executes safely contained inside a Docker sandbox by default.
+A command-line AI coding assistant written in Ruby. Runs in your terminal, keeps per-project conversation history, and executes safely contained inside a Docker or Podman sandbox by default.
 
 ## Quickstart
 
-1. Install Docker — required for the sandbox. See [docs.docker.com/get-docker](https://docs.docker.com/get-docker/).
+1. Install Docker or Podman — required for the sandbox.
+   - Docker: https://docs.docker.com/get-docker/
+   - Podman: https://podman.io/getting-started/installation
 
 2. Add your OpenAI API key to `~/.zephira.yml`:
 
@@ -36,7 +38,7 @@ A command-line AI coding assistant written in Ruby. Runs in your terminal, keeps
 - Concurrent execution of read-only tool calls in a single turn (mutating tools still run sequentially in declared order)
 - Pluggable model + backend layer — register a new model by dropping a file in `lib/zephira/models/`; backends bind per model class
 - OpenAI-compatible backend out of the box; structured to add provider-specific backends without forking the core loop
-- Docker sandbox enabled by default; `--dangerously-skip-sandbox` to opt out
+- Docker or Podman sandbox enabled by default; `--dangerously-skip-sandbox` to opt out
 - Persistent session log + conversation history under `.zephira/` in each project
 - ~95% line coverage on a focused RSpec suite
 
@@ -46,7 +48,7 @@ A command-line AI coding assistant written in Ruby. Runs in your terminal, keeps
 zephira              # start in the current directory
 zephira --help       # CLI help
 zephira --version    # installed version
-zephira --dangerously-skip-sandbox  # run without Docker isolation (your filesystem is exposed)
+zephira --dangerously-skip-sandbox  # run without container isolation (your filesystem is exposed)
 ```
 
 ## Local development install
@@ -57,7 +59,7 @@ cd zephira
 bundle install
 ```
 
-Requirements: Ruby 3.2+, Bundler, Docker (for sandboxed execution).
+Requirements: Ruby 3.2+, Bundler, Docker or Podman (for sandboxed execution).
 
 ## Configuration
 
@@ -82,17 +84,19 @@ ZEPHIRA_BRAVE_SEARCH_API_KEY: "your_brave_api_key_here"
 - `ZEPHIRA_MODEL` — model name to use
 - `ZEPHIRA_BASE_URL` — base URL for OpenAI-compatible APIs
 - `ZEPHIRA_BACKEND` — backend adapter identifier
-- `ZEPHIRA_BASE_IMAGE` — base Docker image for sandbox execution
+- `ZEPHIRA_BASE_IMAGE` — base container image for sandbox execution
 - `ZEPHIRA_BRAVE_SEARCH_API_KEY` — required for the web search tool
 - `ZEPHIRA_SANDBOX` — internal/advanced flag to disable sandboxing
 
 ## Sandbox behavior
 
-By default, Zephira attempts to run inside Docker for safer execution.
+By default, Zephira attempts to run inside a container for safer execution.
 
-When sandboxing is enabled, Zephira re-executes itself inside a container and mounts your current project into `/workspace`. This gives the agent access to the project while helping isolate it from the host system.
+When sandboxing is enabled, Zephira re-executes itself inside Docker or Podman and mounts your current project into `/workspace`. This gives the agent access to the project while helping isolate it from the host system.
 
-If Docker is unavailable, Zephira exits with an error and explains how to proceed.
+Zephira prefers Docker when both Docker and Podman are available. If Docker is unavailable but Podman is available, Zephira uses Podman automatically.
+
+If neither Docker nor Podman is available, Zephira exits with an error and explains how to proceed.
 
 You can bypass sandboxing with:
 
