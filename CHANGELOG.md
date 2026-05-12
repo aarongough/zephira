@@ -1,5 +1,25 @@
 # Zephira Changelog
 
+## [0.1.4]
+
+### Added
+- First-run onboarding wizard. On a fresh install, Zephira detects that no API key is configured and walks the user through a guided prompt that writes their OpenAI API key to `~/.zephira.yml` (with `0600` permissions). Existing config keys are preserved when merging. Setting `ZEPHIRA_API_KEY` in the environment or running in a non-TTY context bypasses the wizard without prompting.
+- `/reload` slash command. Re-executes the running agent (via `Kernel.exec`) so that local code edits take effect without losing conversation history (which is persisted to `.zephira/history.jsonl`). Routes through `bundle exec` when launched under Bundler, otherwise execs Ruby directly.
+- Podman support. When Docker is unavailable, the sandbox launcher auto-detects Podman and uses it instead.
+- Containerized development helpers under `bin/`: `docker-build` builds the dev image, `docker-shell` runs an interactive bash (or arbitrary command) inside it, and `docker-zephira` launches Zephira against the live mounted workspace. The dev launcher runs the onboarding wizard as a host-side preflight so first-run users get the same experience they'd get from a normal `gem install zephira` invocation.
+
+### Changed
+- README quickstart rewritten — first-run users no longer need to hand-edit `~/.zephira.yml`; the wizard handles it.
+- Dockerfile now bakes Git and ripgrep into the runtime image so in-sandbox tool calls don't have to reinstall them on first use.
+- `.dockerignore` added to trim the build context and stop committed gem artifacts from polluting the runtime image.
+- `*.gem` is now gitignored so locally-built release artifacts are no longer accidentally committed.
+
+### Fixed
+- `code_search` tool now resolves ripgrep correctly inside the sandbox image.
+
+### Tests
+- Suite: 449 examples, 0 failures, ~96% line coverage.
+
 ## [0.1.3]
 
 ### Changed

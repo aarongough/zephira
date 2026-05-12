@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    zephira (0.1.3)
+    zephira (0.1.4)
       faraday (~> 2.0)
       tty-cursor (~> 0.7)
       tty-screen (~> 0.8)
