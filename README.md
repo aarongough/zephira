@@ -8,28 +8,25 @@ A command-line AI coding assistant written in Ruby. Runs in your terminal, keeps
    - Docker: https://docs.docker.com/get-docker/
    - Podman: https://podman.io/getting-started/installation
 
-2. Add your OpenAI API key to `~/.zephira.yml`:
-
-   ```yaml
-   ZEPHIRA_API_KEY: "sk-..."
-   ```
-
-3. Install the gem:
+2. Install the gem:
 
    ```sh
    gem install zephira
    ```
 
-4. Run it from any project directory:
+3. Run it from any project directory:
 
    ```sh
    zephira
    ```
 
+   On first run, Zephira launches an onboarding wizard that prompts for your API key and writes it to `~/.zephira.yml` (with `0600` permissions). You can also set `ZEPHIRA_API_KEY` in your environment to skip the wizard entirely.
+
 ## Features
 
 - Interactive terminal chat loop with per-session token-budget tracking and automatic history compaction
 - Built-in slash commands: `/help`, `/about`, `/model`, `/history`, `/compact`, `/clear`, `/reload`, `/bye`
+- First-run onboarding wizard that captures your API key the first time you launch — no manual `~/.zephira.yml` editing required
 - Plugin-style tool system — drop a file in `lib/zephira/tools/` and it is auto-loaded:
   - file I/O: `read_file`, `update_file`, `delete_file`, `list_directory`
   - search: `code_search` (ripgrep-backed), `web_search` (Brave Search API)
@@ -63,13 +60,13 @@ Requirements: Ruby 3.2+, Bundler, Docker or Podman (for sandboxed execution).
 
 ## Configuration
 
-Zephira reads configuration from:
+The first time you run Zephira without an API key configured, the onboarding wizard prompts for one and writes it to `~/.zephira.yml`. You can also configure Zephira manually:
 
 - environment variables
 - `.zephira.yml` in the current project
 - `~/.zephira.yml` in your home directory
 
-Environment variables take precedence.
+Environment variables take precedence. Setting `ZEPHIRA_API_KEY` in your environment also skips the onboarding wizard, which is the recommended path for CI and other non-interactive contexts.
 
 Example configuration:
 
@@ -123,6 +120,8 @@ Inside Zephira, you can use slash commands:
 - `/clear` — clear the screen
 - `/reload` — re-execute the agent process to pick up local code changes (conversation history is preserved)
 - `/bye` — exit the session
+
+To change your API key after onboarding, edit `~/.zephira.yml` directly on the host, or delete it and re-launch to trigger the wizard again.
 
 ## Available models
 
@@ -205,6 +204,8 @@ For an isolated dev environment that mirrors the shipped sandbox image, the `bin
   ```
 
 Both runner scripts mount the current directory at `/workspace`, run as the host UID/GID, and mount `~/.zephira.yml` and `~/.zephira/` into the container so configuration and history persist across runs.
+
+`bin/docker-zephira` runs the onboarding wizard as a host-side preflight before launching the container, so first-run users get the same prompt-and-write-to-`~/.zephira.yml` experience they'd get with a normal `gem install zephira` invocation.
 
 While inside a running Zephira session started this way, the `/reload` slash command re-executes the agent process — picking up edits to `lib/zephira/**` without rebuilding the image or losing conversation history (which is persisted to `.zephira/history.jsonl`). This is the fastest inner loop for iterating on agent code.
 

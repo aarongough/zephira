@@ -8,8 +8,9 @@ module Zephira
 
     def initialize(argv)
       ENV["ZEPHIRA_SANDBOX"] = "false" if argv.include?(DANGEROUS_SKIP_SANDBOX_FLAG)
-      Zephira::Sandbox.exec_if_needed!(argv)
       option_parser.parse!(argv)
+      Zephira::Onboarding.run_if_needed!
+      Zephira::Sandbox.exec_if_needed!(argv)
       Zephira::Agent.new.run_loop
     rescue OptionParser::InvalidOption
       puts option_parser
